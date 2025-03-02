@@ -1,0 +1,42 @@
+spring:
+  config:
+    import:
+      - secret.yaml
+  application:
+    name: LLMka
+  main:
+    banner-mode: "console" # Disable the startup banner    console/log/off
+
+logging:
+  config: classpath:log4j2.xml
+  level:
+    root: INFO # Set the default logging level
+    org.springframework: INFO # Set logging level for Spring Framework
+    org.springframework.integration: INFO
+    org.springframework.messaging: INFO
+    com.fbytes.LLMka: DEBUG
+
+LLMka:
+  config:
+    ignore_invalid_config: true
+  embedding:
+    model_path: ${secret.embedding.model_path}
+    tokenizer_path: ${secret.embedding.tokenizer_path}
+    segment_length_limit: 512
+    segment_overlap: 128
+  datastore:
+    save_interval: PT5M
+    store_path: ${secret.datastore.store_path}
+  datacheck:
+    metahash_size_limit: 512
+    metahash_size_core: 384
+    score_limit: 0.85
+  datasource:
+    config_folder: ${secret.datasource.config_folder}
+  herald:
+    telegram:
+      bot:
+        username: ${secret.telegram.bot.username}
+        token: ${secret.telegram.bot.token}
+        channel: ${secret.telegram.bot.channel}
+        testchannel: ${secret.telegram.bot.testchannel}
