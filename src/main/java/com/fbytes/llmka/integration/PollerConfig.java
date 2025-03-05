@@ -2,28 +2,49 @@ package com.fbytes.llmka.integration;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.SyncTaskExecutor;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.integration.dsl.Pollers;
 import org.springframework.integration.scheduling.PollerMetadata;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+
 @Configuration
 public class PollerConfig {
     @Bean
-    public ThreadPoolTaskExecutor taskExecutor() {
+    public TaskExecutor configTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(5); // Number of core threads
-        executor.setMaxPoolSize(10); // Maximum number of threads
-        executor.setQueueCapacity(25); // Queue capacity for tasks
+        executor.setCorePoolSize(3);
+        executor.setMaxPoolSize(10);
+        executor.setQueueCapacity(25);  // LinkedBlocking
+        executor.setThreadNamePrefix("ConfigPoller-");
         executor.initialize();
+        return executor;
+    }
+
+    @Bean
+    public TaskExecutor heraldTaskExecutor() {
+        SyncTaskExecutor executor = new SyncTaskExecutor();
         return executor;
     }
 
 
     @Bean(name = "configPoller")
     public PollerMetadata configPoller() {
-        return Pollers.fixedRate(60000) // Poll every 5 min
-                .taskExecutor(taskExecutor()) // Use the task executor for concurrency
-                .maxMessagesPerPoll(1) // Optional: limit the number of messages per poll
+        return Pollers.fixedDelay(Duration.of(2, ChronoUnit.MINUTES))
+                .taskExecutor(configTaskExecutor())
+                .maxMessagesPerPoll(1)
+                .getObject();
+    }
+
+
+    @Bean(name = "telegramPoller")
+    public PollerMetadata telegramPoller() {
+        return Pollers.fixedDelay(Duration.of(1, ChronoUnit.SECONDS))
+                .taskExecutor(heraldTaskExecutor())
+                .maxMessagesPerPoll(1)
                 .getObject();
     }
 }

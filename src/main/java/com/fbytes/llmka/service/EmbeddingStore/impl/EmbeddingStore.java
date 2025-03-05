@@ -52,8 +52,8 @@ public class EmbeddingStore implements IEmbeddingStore {
         synchronized (this) {
             embeddingStore.addAll(embeddings, segments);
             if (Duration.between(lastStoreSave, Instant.now()).compareTo(saveInterval) > 0){
-                save(storeFilePath);
                 lastStoreSave = Instant.now();
+                save(storeFilePath);
             }
         }
     }
@@ -77,7 +77,7 @@ public class EmbeddingStore implements IEmbeddingStore {
                         Content.from(embeddingMatch.embedded(), Map.of(ContentMetadata.SCORE, embeddingMatch.score(),
                                 ContentMetadata.EMBEDDING_ID, embeddingMatch.embeddingId()))
                 ).collect(Collectors.toList());
-        if (result != null && !result.isEmpty())
+        if (result.isEmpty())
             return Optional.of(result);
         else
             return Optional.empty();
@@ -88,7 +88,7 @@ public class EmbeddingStore implements IEmbeddingStore {
     public Optional<List<Content>> retrieve(List<Embedding> embeddings, int maxResult, double minScoreLimit) {
         for (int i = 0; i < embeddings.size(); i++) {
             Optional<List<Content>> contentList = retrieve(embeddings.get(i), maxResult, minScoreLimit);
-            if (!contentList.isEmpty())
+            if (contentList.isPresent())
                 return contentList;
         }
         return Optional.empty();

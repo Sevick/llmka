@@ -1,3 +1,4 @@
+import com.fbytes.llmka.model.EmbeddedData;
 import com.fbytes.llmka.model.NewsData;
 import com.fbytes.llmka.service.Embedding.IEmbeddingService;
 import com.fbytes.llmka.service.Embedding.impl.EmbeddingService;
@@ -17,7 +18,6 @@ public class EmbeddingServiceTest {
 
     @Test
     public void testEmbeddingService() {
-
         NewsData newsData = NewsData.builder()
                 .id("ID1")
                 .dataSourceID("DataSourceID")
@@ -27,7 +27,8 @@ public class EmbeddingServiceTest {
                 .text(Optional.empty())
                 .build();
 
-        embeddingService.embedNewsData(newsData);
-        Assert.isTrue(true, "Embedding failed");
+        EmbeddedData embeddedData = embeddingService.embedNewsData(newsData);
+        Assert.isTrue(!embeddedData.getSegments().isEmpty(), "Segments are missing in embedded data");
+        Assert.isTrue(!embeddedData.getEmbeddings().isEmpty(), "Embeddings are missing in embedded data");
     }
 }

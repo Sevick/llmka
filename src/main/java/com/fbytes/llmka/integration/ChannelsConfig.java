@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.channel.DirectChannel;
+import org.springframework.integration.channel.QueueChannel;
 import org.springframework.messaging.MessageChannel;
 
 @Configuration
@@ -54,8 +55,15 @@ public class ChannelsConfig {
     }
 
     @Bean
+    @Qualifier("newsDataCheckChannelReject")
     public MessageChannel newsDataCheckChannelReject() {
         return new DirectChannel();
+    }
+
+    @Bean
+    @Qualifier("heraldChannel")
+    public MessageChannel heraldChannel() {
+        return new QueueChannel();
     }
 
 //    @Bean

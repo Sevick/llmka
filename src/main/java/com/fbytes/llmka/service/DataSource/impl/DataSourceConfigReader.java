@@ -34,6 +34,7 @@ public class DataSourceConfigReader implements IDataSourceConfigReader {
             while (inScan.hasNext()) {
                 try {
                     DataSource dataSource = dataSourceFactory.getDataSourceParams(inScan.next());
+                    logger.debug("Datasource configuration read: {}", dataSource);
                     //if (StringUtils.isEmpty(dataSource.getId()))
                     //    dataSource.setId(String.format("%d", lineNum));
                     callback.accept(dataSource);
@@ -48,10 +49,9 @@ public class DataSourceConfigReader implements IDataSourceConfigReader {
     }
 
     public void retrieveDataSourcesFromFile(File inputFile, Consumer<DataSource> callback) {
-        try(InputStream inputStream = new FileInputStream(inputFile)){
+        try (InputStream inputStream = new FileInputStream(inputFile)) {
             retrieveDataSources(inputStream, callback);
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             logger.logException(e); // TODO
         }
     }

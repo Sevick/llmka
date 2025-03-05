@@ -12,13 +12,14 @@ import org.springframework.util.Assert;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @SpringBootTest(classes = RssRetriever.class)
 public class RssRetriverTest {
@@ -42,11 +43,33 @@ public class RssRetriverTest {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        when(restTemplate.getForObject(rssUrl, String.class)).thenReturn(content);
+        when(restTemplate.getForObject(rssUrl, byte[].class)).thenReturn(content.getBytes(StandardCharsets.UTF_8));
 
         Optional<Stream<NewsData>> result = rssRetriever.retrieveData(new RssDataSource("DatasourceID", "RssRetriver", rssUrl));
         List<NewsData> resultList = result.orElseThrow().toList();
-        //resultList.forEach(el -> System.out.println(el.getDataSourceID() + " " + el.getLink() + " " + el.getDescription()));
-        Assert.isTrue(!resultList.isEmpty() && resultList.size() == 15, "Error parsing paragon RSS data");
+        verify(restTemplate, times(1)).getForObject(rssUrl, byte[].class);
+        verifyNoMoreInteractions(restTemplate);
+        Assert.isTrue(resultList.size() == 15, "Error parsing paragon RSS data");
+    }
+
+
+    @Test
+    public void testRssEncoding() {
+        String rssUrl = "https://someurl/rss/utf8news.xml";
+
+        Resource resource = resourceLoader.getResource("classpath:rusUTF.rss");
+        String content;
+        try {
+            content = new String(Files.readAllBytes(Paths.get(resource.getURI())));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        when(restTemplate.getForObject(rssUrl, byte[].class)).thenReturn(content.getBytes(StandardCharsets.UTF_8));
+
+        Optional<Stream<NewsData>> result = rssRetriever.retrieveData(new RssDataSource("DatasourceID", "RssRetriver", rssUrl));
+        List<NewsData> resultList = result.orElseThrow().toList();
+        Assert.isTrue(resultList.size() == 1, "Error parsing paragon RSS data");
+        Assert.isTrue(resultList.get(0).getTitle().equals("Текст."), "UTF8 text corrupted: Russian");
+        Assert.isTrue(resultList.get(0).getDescription().orElse("").equals("תאור"), "UTF8 text corrupted: Hebrew");
     }
 }

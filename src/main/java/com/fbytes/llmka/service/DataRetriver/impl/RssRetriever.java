@@ -4,7 +4,6 @@ import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.NewsData;
 import com.fbytes.llmka.model.datasource.RssDataSource;
 import com.fbytes.llmka.service.DataRetriver.DataRetriever;
-import com.sun.syndication.feed.synd.SyndContent;
 import com.sun.syndication.feed.synd.SyndEntry;
 import com.sun.syndication.feed.synd.SyndFeed;
 import com.sun.syndication.io.SyndFeedInput;
@@ -16,12 +15,11 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
-
 
 @Service
 public class RssRetriever extends DataRetriever<RssDataSource> {
@@ -34,34 +32,58 @@ public class RssRetriever extends DataRetriever<RssDataSource> {
     @Override
     public Optional<Stream<NewsData>> retrieveData(RssDataSource dataSource) {
         try {
+            byte[] feedStr = restTemplate.getForObject(dataSource.getUrl(), byte[].class);
+            if (feedStr==null)
+                return Optional.empty();
+            InputStream inputStream = new ByteArrayInputStream(feedStr);
             SyndFeedInput input = new SyndFeedInput();
-            String feedStr = restTemplate.getForObject(dataSource.getUrl(), String.class);
-            InputStream inputStream = new ByteArrayInputStream(feedStr.getBytes(StandardCharsets.UTF_8));
             SyndFeed feed = input.build(new XmlReader(inputStream));
             List<SyndEntry> entryList = feed.getEntries();
 
-            Stream<NewsData> result = entryList.stream()
-                    .map(entry ->
-                            NewsData.builder()
-                                    .id(UUID.randomUUID().toString())
-                                    .dataSourceID(dataSource.getId())
-                                    .dataSourceName(dataSource.getName())
-                                    .link(entry.getLink())
-                                    .title(entry.getTitle())
-                                    .description(Optional.ofNullable(entry.getDescription())
-                                            .map(title -> Jsoup.parse(title.getValue()).text()))
-                                    .text(Optional.ofNullable(entry.getContents())
-                                            .filter(contents -> !contents.isEmpty())
-                                            .map(contents -> Jsoup.parse(((SyndContent) contents.get(0)).getValue()))
-                                            .map(document  -> {
-                                                document.select("a").remove();
-                                                return document.text();
-                                            }))
-                                    .build()
-                    );
-            logger.debug("Read {} bytes, entries processed: {}", feedStr.getBytes().length, entryList.size());
-            return Optional.of(result);
+            NewsData[] result = entryList.stream()
+                    .map(entry -> {
+                                String titleStr = entry.getTitle().transform(str -> {
+                                    if (str.charAt(str.length() - 1) != '.')
+                                        return str + ".";
+                                    else
+                                        return str;
+                                });
+                                Optional<String> descrSrc = Optional.ofNullable(entry.getDescription().getValue());
+                                Optional<String> contentSrc = Optional.empty();
+
+                                if (descrSrc.isEmpty()) {
+                                    descrSrc = contentSrc;
+                                    contentSrc = Optional.empty();
+                                }
+
+                                Optional<String> descr = descrSrc
+                                        .map(Jsoup::parse)
+                                        .map(document -> {
+                                            document.select("a").remove();
+                                            return document.text();
+                                        });
+                                Optional<String> content = contentSrc
+                                        .map(Jsoup::parse)
+                                        .map(document -> {
+                                            document.select("a").remove();
+                                            return document.text();
+                                        });
+
+                                return NewsData.builder()
+                                        .id(UUID.randomUUID().toString())
+                                        .dataSourceID(dataSource.getId())
+                                        .dataSourceName(dataSource.getName())
+                                        .link(entry.getLink())
+                                        .title(titleStr)
+                                        .description(descr)
+                                        .text(content)
+                                        .build();
+                            }
+                    ).toArray(size -> new NewsData[size]);
+            logger.debug("Read {} bytes, entries processed: {}", feedStr.length, result.length);
+            return Optional.of(Arrays.stream((NewsData[]) result));
         } catch (Exception e) {
+            logger.error("DataSource: {}, exception: {}", dataSource.getName(), e.getMessage());
             return Optional.empty();
         }
     }

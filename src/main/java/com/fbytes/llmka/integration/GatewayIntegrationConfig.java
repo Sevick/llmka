@@ -2,14 +2,11 @@ package com.fbytes.llmka.integration;
 
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.EmbeddedData;
-import com.fbytes.llmka.model.NewsCheckRejectReason;
 import com.fbytes.llmka.model.NewsData;
 import com.fbytes.llmka.service.DataRetriver.IDataRetriever;
 import com.fbytes.llmka.service.DataSource.IDataSourceConfigReader;
 import com.fbytes.llmka.service.Embedding.IEmbeddingService;
 import com.fbytes.llmka.service.Herald.IHeraldService;
-import com.fbytes.llmka.service.NewsDataCheck.INewsDataCheck;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,7 +19,6 @@ import org.springframework.integration.file.dsl.Files;
 import org.springframework.integration.file.filters.SimplePatternFileListFilter;
 import org.springframework.integration.scheduling.PollerMetadata;
 import org.springframework.integration.support.MessageBuilder;
-import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 
 import java.io.File;
@@ -35,25 +31,27 @@ public class GatewayIntegrationConfig {
     private String configFolder;
     @Value("${LLMka.herald.telegram.bot.channel}")
     private String telegramChannel;
+    @Value("${LLMka.datacheck.reject.reject_reason_header}")
+    private String rejectReasonHeader;
+    @Value("${LLMka.datacheck.reject.reject_explain_header}")
+    private String rejectExplainHeader;
 
     @Autowired
     private ApplicationContext applicationContext;
 
     @Autowired
     private IDataSourceConfigReader dataSourceConfigReader;
-    @Autowired
-    private INewsDataCheck newsDataCheck;
+
     @Autowired
     private IHeraldService telegramBotService;
 
     @Autowired
     private PollerMetadata configPoller;
 
+    @Autowired
+    private PollerMetadata telegramPoller;
+
     private static final Logger logger = Logger.getLogger(GatewayIntegrationConfig.class);
-
-    private static final String rejectReasonHeader = "RejectReason";
-    private static final String rejectExplainHeader = "RejectExplain";
-
 
     @Bean
     public IntegrationFlow readDataSorcesConfig(@Qualifier("datasourceChannel") MessageChannel datasourceChannel) {
@@ -62,6 +60,11 @@ public class GatewayIntegrationConfig {
                                 .filter(new SimplePatternFileListFilter("*.cfg")),
                         config -> config.poller(configPoller)) // Poll every minute
                 .handle((payload, headers) -> {
+//                    try {
+//                        Thread.sleep(1000);
+//                    } catch (InterruptedException e) {
+//                        throw new RuntimeException(e);
+//                    }
                     dataSourceConfigReader.retrieveDataSourcesFromFile((File) payload, item ->
                             datasourceChannel.send(MessageBuilder.withPayload(item).build()));
                     return null;
@@ -93,46 +96,39 @@ public class GatewayIntegrationConfig {
 
 
     @Bean
-    public MessageSelector newsDataCheckSelector() {
-        return new MessageSelector() {
-            @Override
-            public boolean accept(Message<?> message) {
-                Pair<Boolean, Optional<NewsCheckRejectReason>> result = newsDataCheck.checkNewsData((EmbeddedData) message.getPayload());
-                if (!result.getLeft()) {
-                    Message<?> rejectedMessage = MessageBuilder.fromMessage(message)
-                            .setHeader(rejectReasonHeader, result.getRight().get().getReason())
-                            .setHeader(rejectExplainHeader, result.getRight().get().getExplain())
-                            .build();
-                    MessageChannel channel = applicationContext.getBean("newsDataCheckChannelReject", MessageChannel.class);
-                    channel.send(rejectedMessage);
-                }
-                return result.getLeft();
-            }
-        };
+    public MessageSelector newsDataCheckSelector(@Qualifier("newsDataCheckChannelReject") MessageChannel rejectChannel) {
+        NewsDataCheckSelector selector = new NewsDataCheckSelector(rejectChannel);
+        return selector;
     }
 
+    @Bean
+    public IntegrationFlow newsDataCheckFlow(MessageSelector newsDataCheckSelector) {
+        return IntegrationFlow.from("newsDataCheckChannel")
+                .filter(newsDataCheckSelector, cfg -> cfg.discardChannel("nullChannel"))
+                .channel("newsDataCheckChannelOut")
+                .get();
+    }
 
     @Bean
-    public IntegrationFlow newsDataCheckFlow(INewsDataCheck newsDataCheckService) {
-        return IntegrationFlow.from("newsDataCheckChannel")
-                .filter(newsDataCheckSelector(), e -> e.discardChannel("nullChannel"))
+    public IntegrationFlow heraldFlow(@Autowired MessageChannel heraldChannel) {
+        return IntegrationFlow.from(heraldChannel)
                 .handle(m -> {
                     // TODO: Replace with transformer
                     EmbeddedData embeddedData = (EmbeddedData) m.getPayload();
-                    String messageStr = String.format("*%s*%s\t([%s](%s))",
+                    String messageStr = String.format("*%s* %s\t([%s](%s))",
                             embeddedData.getNewsData().getTitle(),
                             embeddedData.getNewsData().getDescription().orElse(""),
                             embeddedData.getNewsData().getDataSourceName(),
                             embeddedData.getNewsData().getLink());
                     logger.info("Sending message to {} {} bytes", telegramChannel, messageStr.getBytes().length);
                     telegramBotService.sendMessage(telegramChannel, messageStr);
-                })
+                }, config -> config.poller(telegramPoller))
                 .get();
     }
 
 
     @Bean
-    public IntegrationFlow bridge1() {
+    public IntegrationFlow bridgeNewDataChannelOut() {
         return IntegrationFlow
                 .from("newDataChannelOut")
                 .channel("embeddingChannel")
@@ -140,7 +136,7 @@ public class GatewayIntegrationConfig {
     }
 
     @Bean
-    public IntegrationFlow bridge2() {
+    public IntegrationFlow bridgeEmbeddingChannelOut() {
         return IntegrationFlow
                 .from("embeddingChannelOut")
                 .channel("newsDataCheckChannel")
@@ -148,18 +144,20 @@ public class GatewayIntegrationConfig {
     }
 
     @Bean
-    public IntegrationFlow newsDataCheckChannelOutBind() {
+    public IntegrationFlow bridgeNewsDataCheckChannelOut() {
         return IntegrationFlow
                 .from("newsDataCheckChannelOut")
-                .nullChannel();
+                .channel("heraldChannel")
+                .get();
     }
+
 
     @Bean
     public IntegrationFlow newsDataCheckChannelRejectBind() {
         return IntegrationFlow
                 .from("newsDataCheckChannelReject")
-                //.handle(m -> logger.info("Reject reason: {}  Message: {}", m.getHeaders().get(rejectReasonHeader), m.getPayload()))
-                //.get();
-                .nullChannel();
+                .handle(m -> logger.info("Reject reason: {}  Message: {}", m.getHeaders().get(rejectReasonHeader), m.getPayload()))
+                .get();
+        //.nullChannel();
     }
 }
