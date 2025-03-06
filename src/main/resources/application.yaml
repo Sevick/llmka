@@ -11,11 +11,18 @@ spring:
 server:
   port: 8080
 
+management:
+  endpoints:
+    web.exposure.include: "*"
+    health:
+      show-details: always
+      show-components: always
+
 logging:
   config: classpath:log4j2.xml
   level:
-    root: INFO # Set the default logging level
-    org.springframework: INFO # Set logging level for Spring Framework
+    root: INFO
+    org.springframework: INFO
     org.springframework.integration: INFO
     org.springframework.messaging: INFO
     com.fbytes.LLMka: DEBUG
@@ -34,7 +41,7 @@ LLMka:
   datacheck:
     metahash_size_limit: 512
     metahash_size_core: 384
-    score_limit: 0.85
+    score_limit: 0.87
     reject:
       reject_reason_header: "RejectReason"
       reject_explain_header: "RejectExplain"
