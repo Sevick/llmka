@@ -18,6 +18,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -58,10 +59,20 @@ public class EmbeddingStore implements IEmbeddingStore {
         }
     }
 
-    public void removeIDes(List<String> idList){
+    @Override
+    public void removeIDes(Collection<String> idList){
         embeddingStore.removeAll(idList);
+        save(storeFilePath);
         logger.debug("Removed {} entries from keystore: {}", idList.size(), idList);
     }
+
+    @Override
+    public void removeOtherIDes(Collection<String> idList){
+        embeddingStore.removeAll(el -> !idList.contains(el));
+        save(storeFilePath);
+        logger.debug("Store cleaned up. Entries left: {}", idList.size());
+    }
+
 
 
     @Override
@@ -77,7 +88,7 @@ public class EmbeddingStore implements IEmbeddingStore {
                         Content.from(embeddingMatch.embedded(), Map.of(ContentMetadata.SCORE, embeddingMatch.score(),
                                 ContentMetadata.EMBEDDING_ID, embeddingMatch.embeddingId()))
                 ).collect(Collectors.toList());
-        if (result.isEmpty())
+        if (!result.isEmpty())
             return Optional.of(result);
         else
             return Optional.empty();
@@ -88,7 +99,7 @@ public class EmbeddingStore implements IEmbeddingStore {
     public Optional<List<Content>> retrieve(List<Embedding> embeddings, int maxResult, double minScoreLimit) {
         for (int i = 0; i < embeddings.size(); i++) {
             Optional<List<Content>> contentList = retrieve(embeddings.get(i), maxResult, minScoreLimit);
-            if (contentList.isPresent())
+            if (!contentList.isEmpty() && !contentList.get().isEmpty())
                 return contentList;
         }
         return Optional.empty();

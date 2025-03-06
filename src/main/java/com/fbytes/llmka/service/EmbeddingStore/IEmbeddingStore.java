@@ -4,13 +4,15 @@ import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.rag.content.Content;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 public interface IEmbeddingStore {
     void store(List<TextSegment> segments, List<Embedding> embeddingList);
 
-    void removeIDes(List<String> idList);
+    void removeIDes(Collection<String> idList);
+    void removeOtherIDes(Collection<String> idList);
 
     Optional<List<Content>> retrieve(Embedding embeddedQuery, int maxResult, double MinScoreLimit);
 

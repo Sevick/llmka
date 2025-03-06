@@ -49,11 +49,11 @@ public class EmbeddingService implements IEmbeddingService {
     @Override
     public EmbeddedData embedNewsData(NewsData newsData) {
         Map<String, String> metadataMap = new HashMap<>();
-        metadataMap.put("Id", newsData.getId());
+        metadataMap.put("id", newsData.getId());
         metadataMap.put("link", newsData.getLink());
         Metadata metadata = Metadata.from(metadataMap);
         Document document = Document.from(newsData.getTitle() + "." + newsData.getDescription().orElse(""), metadata);
-        DocumentSplitter splitter = DocumentSplitters.recursive(segmentLengthLimit, 0);
+        DocumentSplitter splitter = DocumentSplitters.recursive(segmentLengthLimit, segmentOverlap);
         List<TextSegment> segments = splitter.split(document);
         List<Embedding> embeddings = embeddingModel.embedAll(segments).content();
         return new EmbeddedData(newsData, segments, embeddings);

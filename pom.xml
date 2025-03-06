@@ -43,6 +43,7 @@
             </exclusions>
         </dependency>
 
+        <!-- Spring-Integration -->
         <dependency>
             <groupId>org.springframework.integration</groupId>
             <artifactId>spring-integration-http</artifactId>
@@ -51,6 +52,8 @@
             <groupId>org.springframework.integration</groupId>
             <artifactId>spring-integration-file</artifactId>
         </dependency>
+
+        <!-- Logging -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-log4j2</artifactId>
@@ -64,21 +67,12 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
-
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.36</version>
-            <scope>provided</scope>
-        </dependency>
-
         <!-- Tracing -->
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
             <scope>runtime</scope>
         </dependency>
-
 
         <!-- LangChain4j -->
         <dependency>
@@ -97,8 +91,13 @@
             <version>1.0.0-beta1</version>
         </dependency>
 
-
-        <!-- Additional dependencies for HTTP requests, JSON handling, etc. -->
+        <!-- Tools -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.36</version>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
@@ -110,7 +109,12 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
+        <!-- Used to clean the text -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.16.1</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
@@ -121,18 +125,6 @@
             <artifactId>commons-text</artifactId>
             <version>1.10.0</version>
         </dependency>
-        <dependency>
-            <groupId>org.jsoup</groupId>
-            <artifactId>jsoup</artifactId>
-            <version>1.16.1</version>
-        </dependency>
-        <dependency>
-            <groupId>rome</groupId>
-            <artifactId>rome</artifactId>
-            <version>1.0</version>
-        </dependency>
-
-
         <!-- Telegram Bot API -->
         <dependency>
             <groupId>org.telegram</groupId>
@@ -141,7 +133,7 @@
         </dependency>
 
 
-        <!--   TESTS     -->
+        <!-- TESTS -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -166,6 +158,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-
 </project>

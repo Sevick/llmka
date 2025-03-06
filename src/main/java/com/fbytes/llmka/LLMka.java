@@ -11,7 +11,7 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 @EnableIntegration
 @EnableWebMvc
 @EnableMessageHistory
-@EnableIntegrationGraphController(path = "/igraph", allowedOrigins = "http://localhost:8080")
+@EnableIntegrationGraphController(path = "/igraph")
 public class LLMka {
     public static void main(String[] args) {
         new SpringApplicationBuilder(LLMka.class)

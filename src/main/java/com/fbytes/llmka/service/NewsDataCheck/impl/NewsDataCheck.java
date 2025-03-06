@@ -16,10 +16,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -42,7 +39,7 @@ public class NewsDataCheck implements INewsDataCheck {
     private AtomicInteger metaHashSeq = new AtomicInteger(0);
     private AtomicInteger metaHashSize = new AtomicInteger(0);
     private ReadWriteLock metaHashCompressLock = new ReentrantReadWriteLock();
-    private Map<BigInteger, Pair<Integer, String>> metaHash = new ConcurrentHashMap<>();   // <MD5, <seq#,id>>
+    private Map<BigInteger, Pair<Integer, String>> metaHash = new ConcurrentHashMap<>();   // <MD5, <seq#, id>>
 
     private static final Logger logger = Logger.getLogger(NewsDataCheck.class);
 
@@ -93,6 +90,16 @@ public class NewsDataCheck implements INewsDataCheck {
             }
             return true;
         }
+    }
+
+
+    // remove all IDes, that are not in metaHash
+    public void cleanupStore(){
+        logger.info("cleanupStore. Current hash size: {}", metaHash.size());
+        Set<String> idesSet =  metaHash.entrySet().stream()
+                .map(entry -> entry.getValue().getRight())
+                .collect(Collectors.toSet());
+        embeddingStore.removeOtherIDes(idesSet);
     }
 
 

@@ -8,4 +8,5 @@ import java.util.Optional;
 
 public interface INewsDataCheck {
     Pair<Boolean, Optional<NewsCheckRejectReason>> checkNewsData(EmbeddedData newsData);
+    void cleanupStore();
 }
