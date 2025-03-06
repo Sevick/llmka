@@ -71,6 +71,7 @@ public class RssRetriever extends DataRetriever<RssDataSource> {
                 if (description.isEmpty() || description.get().isEmpty()) {
                     description = getFirstSentense(fullText);
                 }
+                title = title.transform(txt -> checkAddLastDot(txt));
                 description = description.map(txt -> checkAddLastDot(txt));
 
                 result.add(

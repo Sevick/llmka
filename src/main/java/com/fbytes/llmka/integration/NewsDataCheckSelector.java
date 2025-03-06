@@ -3,7 +3,6 @@ package com.fbytes.llmka.integration;
 import com.fbytes.llmka.model.EmbeddedData;
 import com.fbytes.llmka.model.NewsCheckRejectReason;
 import com.fbytes.llmka.service.NewsDataCheck.INewsDataCheck;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.integration.core.MessageSelector;
@@ -31,14 +30,15 @@ public class NewsDataCheckSelector implements MessageSelector {
 
     @Override
     public boolean accept(Message<?> message) {
-        Pair<Boolean, Optional<NewsCheckRejectReason>> result = newsDataCheck.checkNewsData((EmbeddedData) message.getPayload());
-        if (!result.getLeft()) {
+        Optional<NewsCheckRejectReason> result = newsDataCheck.checkNewsData((EmbeddedData) message.getPayload());
+        if (!result.isEmpty()) {
             Message<?> rejectedMessage = MessageBuilder.fromMessage(message)
-                    .setHeader(rejectReasonHeader, result.getRight().get().getReason())
-                    .setHeader(rejectExplainHeader, result.getRight().get().getExplain())
+                    .setHeader(rejectReasonHeader, result.get().getReason())
+                    .setHeader(rejectExplainHeader, result.get().getExplain())
                     .build();
             rejectChannel.send(rejectedMessage);
+            return false;
         }
-        return result.getLeft();
+        return true;
     }
 }

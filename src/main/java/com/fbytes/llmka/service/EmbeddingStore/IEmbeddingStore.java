@@ -10,11 +10,11 @@ import java.util.Optional;
 
 public interface IEmbeddingStore {
     void store(List<TextSegment> segments, List<Embedding> embeddingList);
+    Optional<List<Content>> checkAndStore(List<TextSegment> segments, List<Embedding> embeddingList, double minScoreLimit);
 
     void removeIDes(Collection<String> idList);
     void removeOtherIDes(Collection<String> idList);
 
-    Optional<List<Content>> retrieve(Embedding embeddedQuery, int maxResult, double MinScoreLimit);
-
-    Optional<List<Content>> retrieve(List<Embedding> embeddings, int maxResult, double MinScoreLimit);
+    Optional<List<Content>> retrieve(Embedding embeddedQuery, int maxResult, double minScoreLimit);
+    Optional<List<Content>> retrieve(List<Embedding> embeddings, int maxResult, double minScoreLimit);
 }

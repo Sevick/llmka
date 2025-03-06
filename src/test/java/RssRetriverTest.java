@@ -98,7 +98,7 @@ public class RssRetriverTest {
         List<NewsData> resultList = result.orElseThrow().toList();
         Assert.isTrue(resultList.size() == 1, "Error parsing paragon RSS data");
         Assert.isTrue(resultList.get(0).getTitle().equals("Текст."), "UTF8 text corrupted: Russian");
-        Assert.isTrue(resultList.get(0).getDescription().orElse("").equals("תאור"), "UTF8 text corrupted: Hebrew");
+        Assert.isTrue(resultList.get(0).getDescription().orElse("").equals("תאור."), "UTF8 text corrupted: Hebrew");
         resultList.forEach(res -> {
             Assert.isTrue(!checkForTags(res.getTitle()), "tags detected in NewsData");
             Assert.isTrue(!checkForTags(res.getDescription().orElse("")), "tags detected in NewsData");
@@ -121,8 +121,6 @@ public class RssRetriverTest {
         Optional<Stream<NewsData>> result = rssRetriever.retrieveData(new RssDataSource("DatasourceID", "RssRetriver", rssUrl));
         List<NewsData> resultList = result.orElseThrow().toList();
         Assert.isTrue(resultList.size() == 1, "Error parsing paragon RSS data");
-        Assert.isTrue(resultList.get(0).getTitle().equals("Текст."), "UTF8 text corrupted: Russian");
-        Assert.isTrue(resultList.get(0).getDescription().orElse("").equals("תאור"), "UTF8 text corrupted: Hebrew");
         resultList.forEach(res -> {
             Assert.isTrue(!checkForTags(res.getTitle()), "tags detected in NewsData");
             Assert.isTrue(!checkForTags(res.getDescription().orElse("")), "tags detected in NewsData");

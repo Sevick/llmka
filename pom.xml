@@ -42,8 +42,6 @@
             </exclusions>
         </dependency>
 
-
-
         <!-- Spring-Integration -->
         <dependency>
             <groupId>org.springframework.integration</groupId>

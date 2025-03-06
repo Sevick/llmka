@@ -36,27 +36,22 @@ public class NewsDataCheck implements INewsDataCheck {
     @Autowired
     private IEmbeddingStore embeddingStore;
 
-    private AtomicInteger metaHashSeq = new AtomicInteger(0);
-    private AtomicInteger metaHashSize = new AtomicInteger(0);
-    private ReadWriteLock metaHashCompressLock = new ReentrantReadWriteLock();
-    private Map<BigInteger, Pair<Integer, String>> metaHash = new ConcurrentHashMap<>();   // <MD5, <seq#, id>>
-
     private static final Logger logger = Logger.getLogger(NewsDataCheck.class);
+
+    private final ReadWriteLock metaHashCompressLock = new ReentrantReadWriteLock();
+    private final AtomicInteger metaHashSeq = new AtomicInteger(0);   // reset on metaHash compress
+
+    private Map<BigInteger, Pair<Integer, String>> metaHash = new ConcurrentHashMap<>();   // <MD5, <seq#, id>>
 
 
     @Override
-    public Pair<Boolean, Optional<NewsCheckRejectReason>> checkNewsData(EmbeddedData embeddedData) {
+    public Optional<NewsCheckRejectReason> checkNewsData(EmbeddedData embeddedData) {
         if (!checkMeta(embeddedData))
-            return Pair.of(false, Optional.of(new NewsCheckRejectReason(NewsCheckRejectReason.REASON.META_DUPLICATION, "")));
-        synchronized (this) {
-            Optional<List<Content>> result = embeddingStore.retrieve(embeddedData.getEmbeddings(), 1, scoreLimit);
-            if (result.isEmpty()) {
-                embeddingStore.store(embeddedData.getSegments(), embeddedData.getEmbeddings());
-                return Pair.of(true, Optional.empty());
-            } else {
-                return Pair.of(false, Optional.of(new NewsCheckRejectReason(NewsCheckRejectReason.REASON.CLOSE_MATCH, result.get().get(0).textSegment().text())));
-            }
-        }
+            return Optional.of(new NewsCheckRejectReason(NewsCheckRejectReason.REASON.META_DUPLICATION, ""));
+        Optional<List<Content>> result = embeddingStore.checkAndStore(embeddedData.getSegments(), embeddedData.getEmbeddings(), scoreLimit);
+        if (!result.isEmpty())
+            return Optional.of(new NewsCheckRejectReason(NewsCheckRejectReason.REASON.CLOSE_MATCH, result.get().get(0).textSegment().text()));
+        return Optional.empty();
     }
 
 
@@ -77,13 +72,12 @@ public class NewsDataCheck implements INewsDataCheck {
         if (result != null) {
             return false;
         } else {
-            if (metaHashSize.incrementAndGet() > metaHashSizeLimit) {
+            if (metaHash.size() > metaHashSizeLimit) {
                 try {
                     metaHashCompressLock.writeLock().lock();
                     Pair<Map<BigInteger, Pair<Integer, String>>, List<String>> compressionResult = compressMetaHash(metaHashSizeCore);
                     metaHash = compressionResult.getLeft();
                     embeddingStore.removeIDes(compressionResult.getRight());
-                    metaHashSize.set(metaHashSizeCore);
                 } finally {
                     metaHashCompressLock.writeLock().unlock();
                 }
@@ -94,12 +88,12 @@ public class NewsDataCheck implements INewsDataCheck {
 
 
     // remove all IDes, that are not in metaHash
-    public void cleanupStore(){
+    public void cleanupStore() {
         logger.info("cleanupStore. Current hash size: {}", metaHash.size());
-        Set<String> idesSet =  metaHash.entrySet().stream()
+        Set<String> idsSet = metaHash.entrySet().stream()
                 .map(entry -> entry.getValue().getRight())
                 .collect(Collectors.toSet());
-        embeddingStore.removeOtherIDes(idesSet);
+        embeddingStore.removeOtherIDes(idsSet);
     }
 
 
@@ -110,9 +104,10 @@ public class NewsDataCheck implements INewsDataCheck {
         Map.Entry<BigInteger, Pair<Integer, String>>[] entriesArr = metaHash.entrySet().toArray(new Map.Entry[0]);
         Arrays.sort(entriesArr, Map.Entry.<BigInteger, Pair<Integer, String>>comparingByValue().reversed());
 
+        metaHashSeq.set(0);
         ConcurrentHashMap<BigInteger, Pair<Integer, String>> newMetaHash = Arrays.stream(entriesArr, 0, reduceToSize)
                 .collect(Collectors.toMap(entry -> entry.getKey(),
-                        entry -> entry.getValue(),
+                        entry -> Pair.of(metaHashSeq.getAndIncrement(), entry.getValue().getRight()),    // replace seq#
                         (existing, replacement) -> existing,
                         ConcurrentHashMap::new));
         List<String> removedIdList = Arrays.stream(entriesArr, reduceToSize + 1, entriesArr.length - 1)
