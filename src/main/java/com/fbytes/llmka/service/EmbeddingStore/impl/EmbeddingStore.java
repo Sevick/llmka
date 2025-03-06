@@ -133,6 +133,7 @@ public class EmbeddingStore implements IEmbeddingStore {
         logger.info("Store restored from: {}", storeFilePath);
     }
 
+
     @Override
     public Optional<List<Content>> checkAndStore(List<TextSegment> segments, List<Embedding> embeddingList, double minScoreLimit){
         Optional<List<Content>> result = retrieve(embeddingList, 1, minScoreLimit);
