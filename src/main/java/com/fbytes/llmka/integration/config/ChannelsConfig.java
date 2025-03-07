@@ -1,4 +1,4 @@
-package com.fbytes.llmka.integration;
+package com.fbytes.llmka.integration.config;
 
 import com.fbytes.llmka.model.EmbeddedData;
 import com.fbytes.llmka.model.NewsData;

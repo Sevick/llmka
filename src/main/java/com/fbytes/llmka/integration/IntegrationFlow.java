@@ -14,7 +14,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.core.MessageSelector;
-import org.springframework.integration.dsl.IntegrationFlow;
+import org.springframework.integration.dsl.Pollers;
 import org.springframework.integration.file.dsl.Files;
 import org.springframework.integration.file.filters.SimplePatternFileListFilter;
 import org.springframework.integration.scheduling.PollerMetadata;
@@ -22,13 +22,17 @@ import org.springframework.integration.support.MessageBuilder;
 import org.springframework.messaging.MessageChannel;
 
 import java.io.File;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 @Configuration
-public class GatewayIntegrationConfig {
+public class IntegrationFlow {
     @Value("${LLMka.datasource.config_folder}")
     private String configFolder;
+    @Value("${LLMka.herald.telegram.poll_delay}")
+    private Integer telegramPollDelay;
     @Value("${LLMka.herald.telegram.bot.channel}")
     private String telegramChannel;
     @Value("${LLMka.datacheck.reject.reject_reason_header}")
@@ -51,11 +55,11 @@ public class GatewayIntegrationConfig {
     @Autowired
     private PollerMetadata telegramPoller;
 
-    private static final Logger logger = Logger.getLogger(GatewayIntegrationConfig.class);
+    private static final Logger logger = Logger.getLogger(IntegrationFlow.class);
 
     @Bean
-    public IntegrationFlow readDataSorcesConfig(@Qualifier("datasourceChannel") MessageChannel datasourceChannel) {
-        return IntegrationFlow
+    public org.springframework.integration.dsl.IntegrationFlow readDataSorcesConfig(@Qualifier("datasourceChannel") MessageChannel datasourceChannel) {
+        return org.springframework.integration.dsl.IntegrationFlow
                 .from(Files.inboundAdapter(new File(configFolder))
                                 .filter(new SimplePatternFileListFilter("*.cfg")),
                         config -> config.poller(configPoller)) // Poll every minute
@@ -74,8 +78,8 @@ public class GatewayIntegrationConfig {
 
 
     @Bean
-    public IntegrationFlow processNewsData(IDataRetriever dataRetriever) {
-        return IntegrationFlow
+    public org.springframework.integration.dsl.IntegrationFlow processNewsData(IDataRetriever dataRetriever) {
+        return org.springframework.integration.dsl.IntegrationFlow
                 .from("datasourceChannel")
                 .handle(dataRetriever, "retrieveData")
                 .filter((Optional<Stream<NewsData>> opt) -> !opt.isEmpty())
@@ -87,8 +91,8 @@ public class GatewayIntegrationConfig {
 
 
     @Bean
-    public IntegrationFlow embeddingFlow(IEmbeddingService embeddingService) {
-        return IntegrationFlow.from("embeddingChannel")
+    public org.springframework.integration.dsl.IntegrationFlow embeddingFlow(IEmbeddingService embeddingService) {
+        return org.springframework.integration.dsl.IntegrationFlow.from("embeddingChannel")
                 .handle(embeddingService, "embedNewsData")
                 .channel("embeddingChannelOut")
                 .get();
@@ -102,16 +106,17 @@ public class GatewayIntegrationConfig {
     }
 
     @Bean
-    public IntegrationFlow newsDataCheckFlow(MessageSelector newsDataCheckSelector) {
-        return IntegrationFlow.from("newsDataCheckChannel")
+    public org.springframework.integration.dsl.IntegrationFlow newsDataCheckFlow(MessageSelector newsDataCheckSelector) {
+        return org.springframework.integration.dsl.IntegrationFlow.from("newsDataCheckChannel")
                 .filter(newsDataCheckSelector, cfg -> cfg.discardChannel("nullChannel"))
                 .channel("newsDataCheckChannelOut")
                 .get();
     }
 
     @Bean
-    public IntegrationFlow heraldFlow(@Autowired MessageChannel heraldChannel) {
-        return IntegrationFlow.from(heraldChannel)
+    public org.springframework.integration.dsl.IntegrationFlow heraldFlow(@Autowired MessageChannel heraldChannel) {
+        return org.springframework.integration.dsl.IntegrationFlow
+                .from(heraldChannel)
                 .handle(m -> {
                     // TODO: Replace with transformer
                     EmbeddedData embeddedData = (EmbeddedData) m.getPayload();
@@ -128,24 +133,24 @@ public class GatewayIntegrationConfig {
 
 
     @Bean
-    public IntegrationFlow bridgeNewDataChannelOut() {
-        return IntegrationFlow
+    public org.springframework.integration.dsl.IntegrationFlow bridgeNewDataChannelOut() {
+        return org.springframework.integration.dsl.IntegrationFlow
                 .from("newDataChannelOut")
                 .channel("embeddingChannel")
                 .get();
     }
 
     @Bean
-    public IntegrationFlow bridgeEmbeddingChannelOut() {
-        return IntegrationFlow
+    public org.springframework.integration.dsl.IntegrationFlow bridgeEmbeddingChannelOut() {
+        return org.springframework.integration.dsl.IntegrationFlow
                 .from("embeddingChannelOut")
                 .channel("newsDataCheckChannel")
                 .get();
     }
 
     @Bean
-    public IntegrationFlow bridgeNewsDataCheckChannelOut() {
-        return IntegrationFlow
+    public org.springframework.integration.dsl.IntegrationFlow bridgeNewsDataCheckChannelOut() {
+        return org.springframework.integration.dsl.IntegrationFlow
                 .from("newsDataCheckChannelOut")
                 .channel("heraldChannel")
                 .get();
@@ -153,8 +158,8 @@ public class GatewayIntegrationConfig {
 
 
     @Bean
-    public IntegrationFlow newsDataCheckChannelRejectBind() {
-        return IntegrationFlow
+    public org.springframework.integration.dsl.IntegrationFlow newsDataCheckChannelRejectBind() {
+        return org.springframework.integration.dsl.IntegrationFlow
                 .from("newsDataCheckChannelReject")
                 .handle(m -> logger.info("Reject reason: {}  Message: {}", m.getHeaders().get(rejectReasonHeader), m.getPayload()))
                 .get();

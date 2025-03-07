@@ -7,7 +7,12 @@ import com.fbytes.llmka.service.EmbeddingStore.IEmbeddingStore;
 import com.fbytes.llmka.service.NewsDataCheck.INewsDataCheck;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.rag.content.Content;
+import io.micrometer.core.annotation.Timed;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.PostConstruct;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.core.util.Assert;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -21,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,6 +41,8 @@ public class NewsDataCheck implements INewsDataCheck {
 
     @Autowired
     private IEmbeddingStore embeddingStore;
+    @Autowired
+    MeterRegistry meterRegistry;
 
     private static final Logger logger = Logger.getLogger(NewsDataCheck.class);
 
@@ -43,8 +51,17 @@ public class NewsDataCheck implements INewsDataCheck {
 
     private Map<BigInteger, Pair<Integer, String>> metaHash = new ConcurrentHashMap<>();   // <MD5, <seq#, id>>
 
+    @PostConstruct
+    private void init(){
+        Gauge.builder("llmka.newsdatacheck.metahash.size",fetchMetaHashSize()).register(meterRegistry);
+    }
+
+    private Supplier<Number> fetchMetaHashSize(){
+        return () -> metaHash.size();
+    }
 
     @Override
+    @Timed(value="llmka.newsdatacheck.time",description="time to check news for duplicates",percentiles={0.5,0.9})
     public Optional<NewsCheckRejectReason> checkNewsData(EmbeddedData embeddedData) {
         if (!checkMeta(embeddedData))
             return Optional.of(new NewsCheckRejectReason(NewsCheckRejectReason.REASON.META_DUPLICATION, ""));
@@ -56,6 +73,7 @@ public class NewsDataCheck implements INewsDataCheck {
 
 
     // check hash of meta for each segment
+    @Timed(value="llmka.newsdatacheck.checkmeta.time",description="time to check meta for duplicates",percentiles={0.5,0.9})
     private boolean checkMeta(EmbeddedData embeddedData) {
         TextSegment firstSegment = embeddedData.getSegments().get(0);
         String id = firstSegment.metadata().getString("id");
@@ -88,6 +106,7 @@ public class NewsDataCheck implements INewsDataCheck {
 
 
     // remove all IDes, that are not in metaHash
+    @Timed(value="llmka.newsdatacheck.cleanupstore.time",description="time to cleanup the store",percentiles={0.5,0.9})
     public void cleanupStore() {
         logger.info("cleanupStore. Current hash size: {}", metaHash.size());
         Set<String> idsSet = metaHash.entrySet().stream()
@@ -98,6 +117,7 @@ public class NewsDataCheck implements INewsDataCheck {
 
 
     // returns <newHashMap, List<removedIDes>
+    @Timed(value="llmka.newsdatacheck.compressMetaHash.time",description="time to compress metaHash",percentiles={0.5,0.9})
     private Pair<Map<BigInteger, Pair<Integer, String>>, List<String>> compressMetaHash(int reduceToSize) {
         logger.info("Compressing metaHash. Current size: {}", metaHash.size());
         Map<BigInteger, Pair<Integer, String>> newMetaMap = new ConcurrentHashMap();

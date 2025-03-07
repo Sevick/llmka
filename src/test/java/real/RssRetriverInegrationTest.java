@@ -1,3 +1,5 @@
+package real;
+
 import com.fbytes.llmka.model.NewsData;
 import com.fbytes.llmka.model.datasource.RssDataSource;
 import com.fbytes.llmka.service.DataRetriver.IDataRetriever;
@@ -6,14 +8,10 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.util.Assert;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;

@@ -13,6 +13,7 @@ import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.embedding.onnx.OnnxEmbeddingModel;
 import dev.langchain4j.model.embedding.onnx.PoolingMode;
+import io.micrometer.core.annotation.Timed;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -46,7 +47,9 @@ public class EmbeddingService implements IEmbeddingService {
     }
 
 
+
     @Override
+    @Timed(value="llmka.embedding.time",description="time to embed NewsData",percentiles={0.5,0.9})
     public EmbeddedData embedNewsData(NewsData newsData) {
         Map<String, String> metadataMap = new HashMap<>();
         metadataMap.put("id", newsData.getId());

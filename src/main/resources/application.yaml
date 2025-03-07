@@ -49,6 +49,7 @@ LLMka:
     config_folder: ${secret.datasource.config_folder}
   herald:
     telegram:
+      poll_delay: 30
       bot:
         username: ${secret.telegram.bot.username}
         token: ${secret.telegram.bot.token}

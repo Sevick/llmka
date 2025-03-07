@@ -1,13 +1,15 @@
-import com.fbytes.llmka.AppConfig;
+package real;
+
 import com.fbytes.llmka.model.EmbeddedData;
 import com.fbytes.llmka.model.NewsData;
 import com.fbytes.llmka.model.datasource.RssDataSource;
 import com.fbytes.llmka.service.DataRetriver.IDataRetriever;
 import com.fbytes.llmka.service.DataRetriver.impl.RssRetriever;
 import com.fbytes.llmka.service.Embedding.IEmbeddingService;
-import com.fbytes.llmka.service.EmbeddingStore.IEmbeddingStore;
 import com.fbytes.llmka.service.Embedding.impl.EmbeddingService;
+import com.fbytes.llmka.service.EmbeddingStore.IEmbeddingStore;
 import com.fbytes.llmka.service.EmbeddingStore.impl.EmbeddingStore;
+import config.TestConfig;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.rag.content.Content;
 import org.junit.jupiter.api.Disabled;
@@ -21,8 +23,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-@SpringBootTest(classes = {EmbeddingService.class, EmbeddingStore.class, RssRetriever.class})
-@ContextConfiguration(classes = {AppConfig.class})
+@SpringBootTest(classes = {EmbeddingService.class, EmbeddingStore.class, RssRetriever.class, RestTemplate.class})
+@ContextConfiguration(classes = {TestConfig.class})
 public class FlowTest {
 
     @Autowired

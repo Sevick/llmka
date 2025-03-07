@@ -1,3 +1,5 @@
+package real;
+
 import com.fbytes.llmka.service.Herald.impl.TelegramBotService;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;

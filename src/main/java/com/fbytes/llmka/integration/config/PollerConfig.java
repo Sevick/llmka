@@ -1,4 +1,4 @@
-package com.fbytes.llmka.integration;
+package com.fbytes.llmka.integration.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -42,7 +42,7 @@ public class PollerConfig {
 
     @Bean(name = "telegramPoller")
     public PollerMetadata telegramPoller() {
-        return Pollers.fixedDelay(Duration.of(1, ChronoUnit.SECONDS))
+        return Pollers.fixedDelay(Duration.of(30, ChronoUnit.SECONDS))
                 .taskExecutor(heraldTaskExecutor())
                 .maxMessagesPerPoll(1)
                 .getObject();

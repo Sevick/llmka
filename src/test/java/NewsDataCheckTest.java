@@ -1,65 +1,67 @@
-import com.fbytes.llmka.AppConfig;
-import com.fbytes.llmka.model.EmbeddedData;
-import com.fbytes.llmka.model.NewsData;
-import com.fbytes.llmka.service.Embedding.IEmbeddingService;
 import com.fbytes.llmka.service.Embedding.impl.EmbeddingService;
-import com.fbytes.llmka.service.EmbeddingStore.IEmbeddingStore;
 import com.fbytes.llmka.service.EmbeddingStore.impl.EmbeddingStore;
 import com.fbytes.llmka.service.NewsDataCheck.impl.NewsDataCheck;
-import dev.langchain4j.rag.content.Content;
+import config.TestConfig;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.Assert;
 
-import java.util.Arrays;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.math.BigInteger;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @SpringBootTest(classes = {EmbeddingService.class, EmbeddingStore.class, NewsDataCheck.class})
-@ContextConfiguration(classes = {AppConfig.class})
+@ContextConfiguration(classes = {TestConfig.class})
 public class NewsDataCheckTest {
 
     @Autowired
-    private IEmbeddingStore embeddingStore;
-    @Autowired
-    private IEmbeddingService embeddingService;
+    private NewsDataCheck newsDataCheckService;
+
 
     @Test
-    public void similarityTest() {
-        NewsData newsData1 = NewsData.builder()
-                .id("1")
-                .link("http://1")
-                .title("Минэнерго: В марте цена на бензин снизится на 8 агор.")
-                .description(Optional.of("27 февраля министерство энергетики объявило, что в ночь с 1 на 2 марта цена на бензин снизится на 8 агор. Согласно объявлению, цена на 95-октановый."))
-                .build();
+    public void metaHashCompressionTest() {
+        final int targetSize = 5;
 
-        NewsData newsData2 = NewsData.builder()
-                .id("2")
-                .link("http://2")
-                .title("Министерство энергетики сообщило, что в ночь на воскресенье, 2 марта, стоимость литра бензина с октановым числом 95 в Израиле снизится на 8 агорот до 7,23 шекеля при самообслуживании. ")
-                .description(Optional.of("2 марта бензин подешевеет на 8 агорот за литр."))
-                .build();
+        Map<BigInteger, Pair<Integer, String>> testMetaHash = new ConcurrentHashMap<>();
+        for (int i = 100; i < 120; i++) {
+            testMetaHash.put(BigInteger.valueOf(i), Pair.of(i, String.valueOf(i)));
+        }
 
-        NewsData newsData3 = NewsData.builder()
-                .id("3")
-                .link("http://3")
-                .title("Внезапно: в начале  марта снизится цена на бензин.")
-                .description(Optional.of("В полночь на воскресенье несколько понизится цена на топливо. Об этом сделало объявление министерство энергетики."))
-                .build();
+        Field metaHash = null;
+        Method method = null;
+        Pair<Map<BigInteger, Pair<Integer, String>>, List<String>> compressResult;
+        try {
+            metaHash = NewsDataCheck.class.getDeclaredField("metaHash");
+            metaHash.setAccessible(true);
+            method = newsDataCheckService.getClass().getDeclaredMethod("compressMetaHash", int.class);
+            method.setAccessible(true);
 
-        Optional<Stream<NewsData>> dataStream = Optional.of(Arrays.asList(newsData1, newsData2).stream());
-        dataStream.ifPresent(list -> list.forEach(newsData -> {
-                    EmbeddedData embeddings = embeddingService.embedNewsData(newsData);
-                    embeddingStore.store(embeddings.getSegments(), embeddings.getEmbeddings());
-                }
-        ));
+            metaHash.set(newsDataCheckService, testMetaHash);
+            compressResult = (Pair<Map<BigInteger, Pair<Integer, String>>, List<String>>) method.invoke(newsDataCheckService, targetSize);
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to get access to privates of NewsDataCheck: " + e.getMessage());
+        } finally {
+            if (metaHash != null)
+                metaHash.setAccessible(false);
+            if (method != null)
+                method.setAccessible(false);
+        }
 
-        EmbeddedData embeddings = embeddingService.embedNewsData(newsData3);
-        Optional<List<Content>> result = embeddingStore.retrieve(embeddings.getEmbeddings(), 3, 0.85f);
+        Assert.isTrue(compressResult != null, "compressResult is null");
+        Map<BigInteger, Pair<Integer, String>> newHashMap = compressResult.getLeft();
+        List<String> removedIDs = compressResult.getRight();
 
-        Assert.isTrue(!result.isEmpty() && result.get().size() > 0, "No similar news found");
+        Assert.isTrue(newHashMap.size() == targetSize, "compress returned new hashMap of unexpected size");
+
+        Set<String> restIds = newHashMap.values().stream().map(item -> item.getRight()).collect(Collectors.toSet());
+        removedIDs.forEach(id -> Assert.isTrue(!restIds.contains(id), "ID from removeID list found in new map: " + id));
     }
 }
