@@ -2,7 +2,7 @@ package com.fbytes.llmka.integration.config;
 
 import com.fbytes.llmka.model.EmbeddedData;
 import com.fbytes.llmka.model.NewsData;
-import com.fbytes.llmka.model.datasource.DataSource;
+import com.fbytes.llmka.model.newssource.NewsSource;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,10 +13,10 @@ import org.springframework.messaging.MessageChannel;
 @Configuration
 public class ChannelsConfig {
     @Bean
-    @Qualifier("datasourceChannel")
-    public MessageChannel datasourceChannel() {
+    @Qualifier("newsSourceChannel")
+    public MessageChannel newsSourceChannel() {
         DirectChannel channel = new DirectChannel();
-        channel.setDatatypes(DataSource.class);
+        channel.setDatatypes(NewsSource.class);
         return channel;
     }
 

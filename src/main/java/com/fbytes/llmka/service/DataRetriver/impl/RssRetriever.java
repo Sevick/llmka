@@ -2,7 +2,7 @@ package com.fbytes.llmka.service.DataRetriver.impl;
 
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.NewsData;
-import com.fbytes.llmka.model.datasource.RssDataSource;
+import com.fbytes.llmka.model.newssource.RssNewsSource;
 import com.fbytes.llmka.service.DataRetriver.DataRetriever;
 import org.jsoup.Jsoup;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 @Service
-public class RssRetriever extends DataRetriever<RssDataSource> {
+public class RssRetriever extends DataRetriever<RssNewsSource> {
 
     private static final Logger logger = Logger.getLogger(RssRetriever.class);
 
@@ -34,7 +34,7 @@ public class RssRetriever extends DataRetriever<RssDataSource> {
     private RestTemplate restTemplate;
 
     @Override
-    public Optional<Stream<NewsData>> retrieveData(RssDataSource dataSource) {
+    public Optional<Stream<NewsData>> retrieveData(RssNewsSource dataSource) {
         try {
             byte[] feedStr = restTemplate.getForObject(dataSource.getUrl(), byte[].class);
             if (feedStr == null)
@@ -49,7 +49,7 @@ public class RssRetriever extends DataRetriever<RssDataSource> {
     }
 
 
-    private NewsData[] parseRSS(InputStream inputStream, RssDataSource dataSource) throws IOException, ParserConfigurationException, SAXException {
+    private NewsData[] parseRSS(InputStream inputStream, RssNewsSource dataSource) throws IOException, ParserConfigurationException, SAXException {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
         Document doc = builder.parse(inputStream);

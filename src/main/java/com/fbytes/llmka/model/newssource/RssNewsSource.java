@@ -1,4 +1,4 @@
-package com.fbytes.llmka.model.datasource;
+package com.fbytes.llmka.model.newssource;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import lombok.Data;
@@ -7,15 +7,15 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @JsonTypeName("RSS")
-public class RssDataSource extends DataSource {
+public class RssNewsSource extends NewsSource {
     private String url;
 
-    public RssDataSource() {
+    public RssNewsSource() {
         super();
     }
 
-    public RssDataSource(String id, String name, String url) {
-        super(id, "RSS", name);
+    public RssNewsSource(String id, String name, String url, String groupName) {
+        super(id, "RSS", name, groupName);
         this.url = url;
     }
 

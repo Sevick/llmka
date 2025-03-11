@@ -12,6 +12,9 @@
         <Logger name="com.fbytes.llmka.service.DataRetriver" level="info" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
+        <Logger name="org.springframework.integration.router" level="debug" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
         <Root level="info">
             <AppenderRef ref="Console"/>
         </Root>

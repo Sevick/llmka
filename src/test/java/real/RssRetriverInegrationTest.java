@@ -1,7 +1,7 @@
 package real;
 
 import com.fbytes.llmka.model.NewsData;
-import com.fbytes.llmka.model.datasource.RssDataSource;
+import com.fbytes.llmka.model.newssource.RssNewsSource;
 import com.fbytes.llmka.service.DataRetriver.IDataRetriever;
 import com.fbytes.llmka.service.DataRetriver.impl.RssRetriever;
 import org.junit.jupiter.api.Disabled;
@@ -22,14 +22,14 @@ public class RssRetriverInegrationTest {
     @Autowired
     private ResourceLoader resourceLoader;
     @Autowired
-    private IDataRetriever<RssDataSource> rssRetriever;
+    private IDataRetriever<RssNewsSource> rssRetriever;
 
     @Disabled
     @Test
-    public void testRssEncoding() {
+    public void testRealSource() {
         String rssUrl = "https://www.vesty.co.il/3rdparty/mobile/rss/vesty/13148/";
 
-        Optional<Stream<NewsData>> result = rssRetriever.retrieveData(new RssDataSource("DatasourceID", "RssRetriver", rssUrl));
+        Optional<Stream<NewsData>> result = rssRetriever.retrieveData(new RssNewsSource("DatasourceID", "RssRetriver", rssUrl, "GroupName"));
         List<NewsData> resultList = result.orElseThrow().toList();
         Assert.isTrue(!resultList.isEmpty(), "Error parsing paragon RSS data");
     }

@@ -1,12 +1,11 @@
 package com.fbytes.llmka.integration;
 
 import com.fbytes.llmka.logger.Logger;
-import com.fbytes.llmka.model.EmbeddedData;
 import com.fbytes.llmka.model.NewsData;
+import com.fbytes.llmka.model.newssource.NewsSource;
 import com.fbytes.llmka.service.DataRetriver.IDataRetriever;
-import com.fbytes.llmka.service.DataSource.IDataSourceConfigReader;
 import com.fbytes.llmka.service.Embedding.IEmbeddingService;
-import com.fbytes.llmka.service.Herald.IHeraldService;
+import com.fbytes.llmka.service.NewsSourceConfigReader.INewsSourceConfigReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,7 +13,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.core.MessageSelector;
-import org.springframework.integration.dsl.Pollers;
+import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.file.dsl.Files;
 import org.springframework.integration.file.filters.SimplePatternFileListFilter;
 import org.springframework.integration.scheduling.PollerMetadata;
@@ -22,55 +21,47 @@ import org.springframework.integration.support.MessageBuilder;
 import org.springframework.messaging.MessageChannel;
 
 import java.io.File;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 @Configuration
-public class IntegrationFlow {
-    @Value("${LLMka.datasource.config_folder}")
+public class MainIntegrationFlow {
+    private static final Logger logger = Logger.getLogger(MainIntegrationFlow.class);
+
+    @Value("${llmka.newssource.config_folder}")
     private String configFolder;
-    @Value("${LLMka.herald.telegram.poll_delay}")
-    private Integer telegramPollDelay;
-    @Value("${LLMka.herald.telegram.bot.channel}")
-    private String telegramChannel;
-    @Value("${LLMka.datacheck.reject.reject_reason_header}")
+    @Value("${llmka.datacheck.reject.reject_reason_header}")
     private String rejectReasonHeader;
-    @Value("${LLMka.datacheck.reject.reject_explain_header}")
-    private String rejectExplainHeader;
+    @Value("${llmka.herald.news_group_header}")
+    private String newsGroupHeader;
 
     @Autowired
     private ApplicationContext applicationContext;
-
     @Autowired
-    private IDataSourceConfigReader dataSourceConfigReader;
-
-    @Autowired
-    private IHeraldService telegramBotService;
-
+    private INewsSourceConfigReader dataSourceConfigReader;
     @Autowired
     private PollerMetadata configPoller;
-
     @Autowired
     private PollerMetadata telegramPoller;
 
-    private static final Logger logger = Logger.getLogger(IntegrationFlow.class);
 
     @Bean
-    public org.springframework.integration.dsl.IntegrationFlow readDataSorcesConfig(@Qualifier("datasourceChannel") MessageChannel datasourceChannel) {
+    public org.springframework.integration.dsl.IntegrationFlow readDataSorcesConfig(@Qualifier("newsSourceChannel") MessageChannel newsSourceChannel) {
         return org.springframework.integration.dsl.IntegrationFlow
                 .from(Files.inboundAdapter(new File(configFolder))
                                 .filter(new SimplePatternFileListFilter("*.cfg")),
                         config -> config.poller(configPoller)) // Poll every minute
+//                .enrichHeaders(h -> h.headerFunction(newsGroupHeader,
+//                        m -> ((File) m.getPayload()).getName()))
                 .handle((payload, headers) -> {
-//                    try {
-//                        Thread.sleep(1000);
-//                    } catch (InterruptedException e) {
-//                        throw new RuntimeException(e);
-//                    }
-                    dataSourceConfigReader.retrieveDataSourcesFromFile((File) payload, item ->
-                            datasourceChannel.send(MessageBuilder.withPayload(item).build()));
+                    dataSourceConfigReader.retrieveNewsSourcesFromFile((File) payload, item ->
+                            newsSourceChannel.send(
+                                    MessageBuilder
+                                            .withPayload(item)
+                                            .copyHeaders(headers)
+                                            .build()
+                            )
+                    );
                     return null;
                 })
                 .get();
@@ -79,8 +70,10 @@ public class IntegrationFlow {
 
     @Bean
     public org.springframework.integration.dsl.IntegrationFlow processNewsData(IDataRetriever dataRetriever) {
-        return org.springframework.integration.dsl.IntegrationFlow
-                .from("datasourceChannel")
+        return IntegrationFlow
+                .from("newsSourceChannel")
+                .enrichHeaders(h -> h.headerFunction(newsGroupHeader,
+                        m -> ((NewsSource) m.getPayload()).getGroup()))
                 .handle(dataRetriever, "retrieveData")
                 .filter((Optional<Stream<NewsData>> opt) -> !opt.isEmpty())
                 .transform((Optional<Stream<NewsData>> opt) -> opt.get())
@@ -98,7 +91,6 @@ public class IntegrationFlow {
                 .get();
     }
 
-
     @Bean
     public MessageSelector newsDataCheckSelector(@Qualifier("newsDataCheckChannelReject") MessageChannel rejectChannel) {
         NewsDataCheckSelector selector = new NewsDataCheckSelector(rejectChannel);
@@ -112,25 +104,6 @@ public class IntegrationFlow {
                 .channel("newsDataCheckChannelOut")
                 .get();
     }
-
-    @Bean
-    public org.springframework.integration.dsl.IntegrationFlow heraldFlow(@Autowired MessageChannel heraldChannel) {
-        return org.springframework.integration.dsl.IntegrationFlow
-                .from(heraldChannel)
-                .handle(m -> {
-                    // TODO: Replace with transformer
-                    EmbeddedData embeddedData = (EmbeddedData) m.getPayload();
-                    String messageStr = String.format("*%s* %s\t([%s](%s))",
-                            embeddedData.getNewsData().getTitle(),
-                            embeddedData.getNewsData().getDescription().orElse(""),
-                            embeddedData.getNewsData().getDataSourceName(),
-                            embeddedData.getNewsData().getLink());
-                    logger.info("Sending message to {} {} bytes", telegramChannel, messageStr.getBytes().length);
-                    telegramBotService.sendMessage(telegramChannel, messageStr);
-                }, config -> config.poller(telegramPoller))
-                .get();
-    }
-
 
     @Bean
     public org.springframework.integration.dsl.IntegrationFlow bridgeNewDataChannelOut() {

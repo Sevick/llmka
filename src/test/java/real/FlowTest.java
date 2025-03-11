@@ -2,7 +2,7 @@ package real;
 
 import com.fbytes.llmka.model.EmbeddedData;
 import com.fbytes.llmka.model.NewsData;
-import com.fbytes.llmka.model.datasource.RssDataSource;
+import com.fbytes.llmka.model.newssource.RssNewsSource;
 import com.fbytes.llmka.service.DataRetriver.IDataRetriever;
 import com.fbytes.llmka.service.DataRetriver.impl.RssRetriever;
 import com.fbytes.llmka.service.Embedding.IEmbeddingService;
@@ -28,7 +28,7 @@ import java.util.stream.Stream;
 public class FlowTest {
 
     @Autowired
-    private IDataRetriever<RssDataSource> rssRetriever;
+    private IDataRetriever<RssNewsSource> rssRetriever;
     @Autowired
     private IEmbeddingStore embeddingStore;
 
@@ -39,7 +39,7 @@ public class FlowTest {
     private RestTemplate restTemplate;
 
     private String rssUrl = "https://detaly.co.il/feed/";
-    private RssDataSource rssDataSource = new RssDataSource("DatasourceID", "RssRetriver", rssUrl);
+    private RssNewsSource rssDataSource = new RssNewsSource("DatasourceID", "RssRetriver", rssUrl, "GroupName");
 
     @Disabled
     @Test

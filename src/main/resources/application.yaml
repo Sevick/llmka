@@ -27,9 +27,10 @@ logging:
     org.springframework.messaging: INFO
     com.fbytes.LLMka: DEBUG
 
-LLMka:
+llmka:
   config:
     ignore_invalid_config: true
+    mappings_file: "${secret.config.mappings_file}"
   embedding:
     model_path: ${secret.embedding.model_path}
     tokenizer_path: ${secret.embedding.tokenizer_path}
@@ -45,13 +46,18 @@ LLMka:
     reject:
       reject_reason_header: "RejectReason"
       reject_explain_header: "RejectExplain"
-  datasource:
+  newssource:
     config_folder: ${secret.datasource.config_folder}
   herald:
+    news_group_header: "newsGroupHeader"
+    config_file: ${secret.telegram.config_file}
     telegram:
       poll_delay: 30
       bot:
-        username: ${secret.telegram.bot.username}
-        token: ${secret.telegram.bot.token}
-        channel: ${secret.telegram.bot.channel}
-        testchannel: ${secret.telegram.bot.testchannel}
+        botparams:
+          israeldigestrusbot:
+            tgChannel: "${secret.telegram.bot.israeldigestrusbot.tgChannel}"
+            token: "${secret.telegram.bot.israeldigestrusbot.token}"
+          aigestbot:
+            tgChannel: "${secret.telegram.bot.aigestbot.tgChannel}"
+            token: "${secret.telegram.bot.aigestbot.token}"

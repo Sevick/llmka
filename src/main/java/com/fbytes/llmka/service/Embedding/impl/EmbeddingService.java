@@ -25,13 +25,13 @@ import java.util.Map;
 @Service
 public class EmbeddingService implements IEmbeddingService {
 
-    @Value("${LLMka.embedding.model_path}")
+    @Value("${llmka.embedding.model_path}")
     private String pathToModel;
-    @Value("${LLMka.embedding.tokenizer_path}")
+    @Value("${llmka.embedding.tokenizer_path}")
     private String pathToTokenizer;
-    @Value("${LLMka.embedding.segment_length_limit:512}")
+    @Value("${llmka.embedding.segment_length_limit:512}")
     private Integer segmentLengthLimit;
-    @Value("${LLMka.embedding.segment_overlap:128}")
+    @Value("${llmka.embedding.segment_overlap:128}")
     private Integer segmentOverlap;
 
     private static final Logger logger = Logger.getLogger(EmbeddingService.class);

@@ -1,3 +1,7 @@
+import com.fbytes.llmka.model.EmbeddedData;
+import com.fbytes.llmka.model.NewsCheckRejectReason;
+import com.fbytes.llmka.model.NewsData;
+import com.fbytes.llmka.service.Embedding.IEmbeddingService;
 import com.fbytes.llmka.service.Embedding.impl.EmbeddingService;
 import com.fbytes.llmka.service.EmbeddingStore.impl.EmbeddingStore;
 import com.fbytes.llmka.service.NewsDataCheck.impl.NewsDataCheck;
@@ -14,6 +18,7 @@ import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -24,6 +29,8 @@ public class NewsDataCheckTest {
 
     @Autowired
     private NewsDataCheck newsDataCheckService;
+    @Autowired
+    private IEmbeddingService embeddingService;
 
 
     @Test
@@ -63,5 +70,25 @@ public class NewsDataCheckTest {
 
         Set<String> restIds = newHashMap.values().stream().map(item -> item.getRight()).collect(Collectors.toSet());
         removedIDs.forEach(id -> Assert.isTrue(!restIds.contains(id), "ID from removeID list found in new map: " + id));
+    }
+
+
+    @Test
+    public void newsCheckMetaDuplicationTest() {
+        NewsData newsData = NewsData.builder()
+                .id("ID1")
+                .dataSourceID("DataSourceID")
+                .link("http://somelink")
+                .title("Title")
+                .description(Optional.of("Description"))
+                .text(Optional.empty())
+                .build();
+
+        EmbeddedData embeddedNewsData = embeddingService.embedNewsData(newsData);
+        newsDataCheckService.checkNewsData(embeddedNewsData);
+
+        Optional<NewsCheckRejectReason> duplication = newsDataCheckService.checkNewsData(embeddedNewsData);
+        Assert.isTrue(!duplication.isEmpty(), "Duplication not detected");
+        Assert.isTrue(duplication.get().getReason() == NewsCheckRejectReason.REASON.META_DUPLICATION, "Record rejected, but reject reason is not META_DUPLICATION");
     }
 }

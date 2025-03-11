@@ -14,9 +14,9 @@ import java.util.Optional;
 
 public class NewsDataCheckSelector implements MessageSelector {
 
-    @Value("${LLMka.datacheck.reject.reject_reason_header}")
+    @Value("${llmka.datacheck.reject.reject_reason_header}")
     private String rejectReasonHeader;
-    @Value("${LLMka.datacheck.reject.reject_explain_header}")
+    @Value("${llmka.datacheck.reject.reject_explain_header}")
     private String rejectExplainHeader;
 
     @Autowired

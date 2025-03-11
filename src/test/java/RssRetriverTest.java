@@ -1,5 +1,5 @@
 import com.fbytes.llmka.model.NewsData;
-import com.fbytes.llmka.model.datasource.RssDataSource;
+import com.fbytes.llmka.model.newssource.RssNewsSource;
 import com.fbytes.llmka.service.DataRetriver.IDataRetriever;
 import com.fbytes.llmka.service.DataRetriver.impl.RssRetriever;
 import org.junit.jupiter.api.Test;
@@ -29,7 +29,7 @@ public class RssRetriverTest {
     @Autowired
     private ResourceLoader resourceLoader;
     @Autowired
-    private IDataRetriever<RssDataSource> rssRetriever;
+    private IDataRetriever<RssNewsSource> rssRetriever;
 
     @MockitoBean
     private RestTemplate restTemplate;
@@ -48,7 +48,7 @@ public class RssRetriverTest {
         }
         when(restTemplate.getForObject(rssUrl, byte[].class)).thenReturn(content.getBytes(StandardCharsets.UTF_8));
 
-        Optional<Stream<NewsData>> result = rssRetriever.retrieveData(new RssDataSource("DatasourceID", "RssRetriver", rssUrl));
+        Optional<Stream<NewsData>> result = rssRetriever.retrieveData(new RssNewsSource("DatasourceID", "RssRetriver", rssUrl, "GroupName"));
         List<NewsData> resultList = result.orElseThrow().toList();
         verify(restTemplate, times(1)).getForObject(rssUrl, byte[].class);
         verifyNoMoreInteractions(restTemplate);
@@ -69,7 +69,7 @@ public class RssRetriverTest {
         }
         when(restTemplate.getForObject(rssUrl, byte[].class)).thenReturn(content.getBytes(StandardCharsets.UTF_8));
 
-        Optional<Stream<NewsData>> result = rssRetriever.retrieveData(new RssDataSource("DatasourceID", "RssRetriver", rssUrl));
+        Optional<Stream<NewsData>> result = rssRetriever.retrieveData(new RssNewsSource("DatasourceID", "RssRetriver", rssUrl, "GroupName"));
         List<NewsData> resultList = result.orElseThrow().toList();
         verify(restTemplate, times(1)).getForObject(rssUrl, byte[].class);
         verifyNoMoreInteractions(restTemplate);
@@ -94,7 +94,7 @@ public class RssRetriverTest {
         }
         when(restTemplate.getForObject(rssUrl, byte[].class)).thenReturn(content.getBytes(StandardCharsets.UTF_8));
 
-        Optional<Stream<NewsData>> result = rssRetriever.retrieveData(new RssDataSource("DatasourceID", "RssRetriver", rssUrl));
+        Optional<Stream<NewsData>> result = rssRetriever.retrieveData(new RssNewsSource("DatasourceID", "RssRetriver", rssUrl, "GroupName"));
         List<NewsData> resultList = result.orElseThrow().toList();
         Assert.isTrue(resultList.size() == 1, "Error parsing paragon RSS data");
         Assert.isTrue(resultList.get(0).getTitle().equals("Текст."), "UTF8 text corrupted: Russian");
@@ -118,7 +118,7 @@ public class RssRetriverTest {
         }
         when(restTemplate.getForObject(rssUrl, byte[].class)).thenReturn(content.getBytes(StandardCharsets.UTF_8));
 
-        Optional<Stream<NewsData>> result = rssRetriever.retrieveData(new RssDataSource("DatasourceID", "RssRetriver", rssUrl));
+        Optional<Stream<NewsData>> result = rssRetriever.retrieveData(new RssNewsSource("DatasourceID", "RssRetriver", rssUrl, "GroupName"));
         List<NewsData> resultList = result.orElseThrow().toList();
         Assert.isTrue(resultList.size() == 1, "Error parsing paragon RSS data");
         resultList.forEach(res -> {

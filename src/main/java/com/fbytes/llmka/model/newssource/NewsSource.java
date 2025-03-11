@@ -1,4 +1,4 @@
-package com.fbytes.llmka.model.datasource;
+package com.fbytes.llmka.model.newssource;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -17,8 +17,9 @@ import lombok.NoArgsConstructor;
         include = JsonTypeInfo.As.EXISTING_PROPERTY,
         property = "type",
         visible = true)
-public abstract class DataSource {
+public abstract class NewsSource {
     private String id;
     private String type;
     private String name;
+    private String group;
 }

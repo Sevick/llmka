@@ -1,24 +1,36 @@
 package real;
 
-import com.fbytes.llmka.service.Herald.impl.TelegramBotService;
+import com.fbytes.llmka.LLMka;
+import com.fbytes.llmka.TelegramBotConfig;
+import com.fbytes.llmka.model.heraldchannel.HeraldChannelTelegram;
+import com.fbytes.llmka.service.Herald.impl.HeraldServiceTelegram;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ConfigurableApplicationContext;
 
-@SpringBootTest(classes = TelegramBotService.class)
+@SpringBootTest(classes = LLMka.class)
+@EnableConfigurationProperties(TelegramBotConfig.class)
 public class TelegramBotTest {
 
     @Autowired
-    TelegramBotService telegramBotService;
+    private ConfigurableApplicationContext context;
+    @Autowired
+    private TelegramBotConfig telegramBotConfig;
 
-    @Value("${LLMka.herald.telegram.bot.testchannel}")
-    private String channel;
+    private final String testChannel = "xxxxx";
 
     @Disabled
     @Test
     public void sendMessageTest() {
-        telegramBotService.sendMessage(channel, "TestMessage#3");
+
+        HeraldServiceTelegram newHeraldService = new HeraldServiceTelegram(testChannel);
+        context.getAutowireCapableBeanFactory().autowireBean(newHeraldService);
+        context.getBeanFactory().registerSingleton("TestHerald", newHeraldService);
+
+        newHeraldService.sendMessage("TestMessage#4");
     }
 }

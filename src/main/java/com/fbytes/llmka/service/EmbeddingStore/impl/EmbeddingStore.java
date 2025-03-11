@@ -10,6 +10,7 @@ import dev.langchain4j.rag.content.ContentMetadata;
 import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
 import dev.langchain4j.store.embedding.EmbeddingSearchResult;
 import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore;
+import io.micrometer.core.annotation.Timed;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,9 +31,9 @@ import java.util.stream.Collectors;
 
 @Repository
 public class EmbeddingStore implements IEmbeddingStore {
-    @Value("${LLMka.datastore.save_interval}")
+    @Value("${llmka.datastore.save_interval}")
     private Duration saveInterval;
-    @Value("${LLMka.datastore.store_path}")
+    @Value("${llmka.datastore.store_path}")
     private String storeFilePath;
 
     private static final Logger logger = Logger.getLogger(EmbeddingStore.class);
@@ -53,6 +54,7 @@ public class EmbeddingStore implements IEmbeddingStore {
 
 
     @Override
+    @Timed(value = "llmka.embeddingstore.store_time", description = "time to check news for duplicates")
     public void store(List<TextSegment> segments, List<Embedding> embeddings) {
         try {
             readWriteLock.writeLock().lock();
@@ -90,6 +92,7 @@ public class EmbeddingStore implements IEmbeddingStore {
 
 
     @Override
+    @Timed(value = "llmka.embeddingstore.retrieve_time", description = "time to check news for duplicates")
     public Optional<List<Content>> retrieve(Embedding embeddedQuery, int maxResult, double minScoreLimit) {
         EmbeddingSearchRequest searchRequest = EmbeddingSearchRequest.builder()
                 .queryEmbedding(embeddedQuery)

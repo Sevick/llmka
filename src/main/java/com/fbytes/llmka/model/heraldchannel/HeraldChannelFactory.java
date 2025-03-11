@@ -1,10 +1,11 @@
-package com.fbytes.llmka.model.datasource;
+package com.fbytes.llmka.model.heraldchannel;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fbytes.llmka.logger.Logger;
+import com.fbytes.llmka.model.IConfigFactory;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
@@ -15,23 +16,22 @@ import java.util.Arrays;
 import java.util.Set;
 
 @Service
-public class DataSourceFactory {
-    private final static ObjectMapper mapper = new ObjectMapper();
-
-    private static final Logger logger = Logger.getLogger(DataSourceFactory.class);
+public class HeraldChannelFactory implements IConfigFactory<HeraldChannel> {
+    private static final Logger logger = Logger.getLogger(HeraldChannelFactory.class);
+    private static final ObjectMapper mapper = new ObjectMapper();
 
     @PostConstruct
     private void init() {
-        // search for DataSource ancestors in the same package and register jackson subtypes
+        // search for HeraldChannel ancestors in the same package and register jackson subtypes
         ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(false);
-        provider.addIncludeFilter(new AssignableTypeFilter(DataSource.class));
-        Set<BeanDefinition> components = provider.findCandidateComponents(DataSource.class.getPackageName().replaceAll("[.]", "/"));
+        provider.addIncludeFilter(new AssignableTypeFilter(HeraldChannel.class));
+        Set<BeanDefinition> components = provider.findCandidateComponents(HeraldChannel.class.getPackageName().replaceAll("[.]", "/"));
         components.forEach(component -> {
-            logger.debug("Register DataSource subtype: {}", component.getBeanClassName());
+            logger.debug("Register HeraldChannel subtype: {}", component.getBeanClassName());
             try {
-                Class<?> datasourceImplClass = Class.forName(component.getBeanClassName());
-                String subType = getJsonClassAnnotationValue(datasourceImplClass);
-                mapper.registerSubtypes(new NamedType(datasourceImplClass, subType));
+                Class<?> heraldChannelImplClass = Class.forName(component.getBeanClassName());
+                String subType = getJsonClassAnnotationValue(heraldChannelImplClass);
+                mapper.registerSubtypes(new NamedType(heraldChannelImplClass, subType));
             } catch (Exception e) {
                 logger.logException(e);
                 throw new RuntimeException(e);
@@ -39,8 +39,9 @@ public class DataSourceFactory {
         });
     }
 
-    public DataSource getDataSourceParams(String json) throws JsonProcessingException {
-        return mapper.readValue(json, DataSource.class);
+    @Override
+    public HeraldChannel getParams(String json) throws JsonProcessingException {
+        return mapper.readValue(json, HeraldChannel.class);
     }
 
     private String getJsonClassAnnotationValue(Class<?> cl) {
