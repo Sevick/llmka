@@ -1,4 +1,4 @@
-package com.fbytes.llmka;
+package com.fbytes.llmka.config;
 
 import io.micrometer.core.aop.TimedAspect;
 import io.micrometer.core.instrument.MeterRegistry;

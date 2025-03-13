@@ -41,7 +41,7 @@ public class NewsDataCheck implements INewsDataCheck {
     @Autowired
     private IEmbeddingStore embeddingStore;
     @Autowired
-    MeterRegistry meterRegistry;
+    private MeterRegistry meterRegistry;
 
     private static final Logger logger = Logger.getLogger(NewsDataCheck.class);
 

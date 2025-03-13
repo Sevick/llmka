@@ -3,6 +3,8 @@ package com.fbytes.llmka.integration;
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.NewsData;
 import com.fbytes.llmka.model.newssource.NewsSource;
+import com.fbytes.llmka.model.newssource.NewsSourceFactory;
+import com.fbytes.llmka.service.ConfigReader.impl.ConfigReader;
 import com.fbytes.llmka.service.DataRetriver.IDataRetriever;
 import com.fbytes.llmka.service.Embedding.IEmbeddingService;
 import com.fbytes.llmka.service.NewsSourceConfigReader.INewsSourceConfigReader;
@@ -37,12 +39,17 @@ public class MainIntegrationFlow {
 
     @Autowired
     private ApplicationContext applicationContext;
-    @Autowired
-    private INewsSourceConfigReader dataSourceConfigReader;
+//    @Autowired
+//    private INewsSourceConfigReader newsSourceConfigReader;
     @Autowired
     private PollerMetadata configPoller;
     @Autowired
     private PollerMetadata telegramPoller;
+
+    @Autowired
+    ConfigReader<NewsSource> newsSourceConfigReader;
+    @Autowired
+    NewsSourceFactory newsSourceFactory;
 
 
     @Bean
@@ -54,7 +61,7 @@ public class MainIntegrationFlow {
 //                .enrichHeaders(h -> h.headerFunction(newsGroupHeader,
 //                        m -> ((File) m.getPayload()).getName()))
                 .handle((payload, headers) -> {
-                    dataSourceConfigReader.retrieveNewsSourcesFromFile((File) payload, item ->
+                    newsSourceConfigReader.retrieveFromFile(newsSourceFactory, (File) payload, item ->
                             newsSourceChannel.send(
                                     MessageBuilder
                                             .withPayload(item)
@@ -78,7 +85,7 @@ public class MainIntegrationFlow {
                 .filter((Optional<Stream<NewsData>> opt) -> !opt.isEmpty())
                 .transform((Optional<Stream<NewsData>> opt) -> opt.get())
                 .split()
-                .channel("newDataChannelOut")
+                .channel("newsDataChannelOut")
                 .get();
     }
 
@@ -108,7 +115,7 @@ public class MainIntegrationFlow {
     @Bean
     public org.springframework.integration.dsl.IntegrationFlow bridgeNewDataChannelOut() {
         return org.springframework.integration.dsl.IntegrationFlow
-                .from("newDataChannelOut")
+                .from("newsDataChannelOut")
                 .channel("embeddingChannel")
                 .get();
     }

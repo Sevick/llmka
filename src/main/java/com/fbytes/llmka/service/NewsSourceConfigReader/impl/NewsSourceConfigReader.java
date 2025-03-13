@@ -14,6 +14,7 @@ import java.io.*;
 import java.util.Scanner;
 import java.util.function.Consumer;
 
+/*
 
 //TODO: Replace with generic config reader
 @Service
@@ -59,3 +60,4 @@ public class NewsSourceConfigReader implements INewsSourceConfigReader {
         }
     }
 }
+*/

@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.IConfigFactory;
-import com.fbytes.llmka.model.heraldchannel.HeraldChannel;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;

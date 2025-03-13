@@ -17,8 +17,9 @@ import lombok.NoArgsConstructor;
         include = JsonTypeInfo.As.EXISTING_PROPERTY,
         property = "type",
         visible = true)
-public abstract class HeraldChannel {
+public abstract class Herald {
     private String id;
     private String type;
+    private String channel;
     private String name;
 }

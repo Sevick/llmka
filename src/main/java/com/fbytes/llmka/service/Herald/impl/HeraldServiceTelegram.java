@@ -1,8 +1,8 @@
 package com.fbytes.llmka.service.Herald.impl;
 
-import com.fbytes.llmka.TelegramBotConfig;
+import com.fbytes.llmka.config.TelegramBotConfig;
 import com.fbytes.llmka.logger.Logger;
-import com.fbytes.llmka.model.heraldchannel.HeraldChannelTelegram;
+import com.fbytes.llmka.model.heraldchannel.HeraldTelegram;
 import com.fbytes.llmka.service.Herald.IHeraldService;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +31,7 @@ public class HeraldServiceTelegram implements IHeraldService {
         this.botUsername = botUsername;
     }
 
-    public HeraldServiceTelegram(HeraldChannelTelegram heraldChannelTelegram) {
+    public HeraldServiceTelegram(HeraldTelegram heraldChannelTelegram) {
         this.botUsername = heraldChannelTelegram.getBot();
     }
 

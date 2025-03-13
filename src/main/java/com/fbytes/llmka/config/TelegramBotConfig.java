@@ -1,4 +1,4 @@
-package com.fbytes.llmka;
+package com.fbytes.llmka.config;
 
 import lombok.Getter;
 import lombok.Setter;

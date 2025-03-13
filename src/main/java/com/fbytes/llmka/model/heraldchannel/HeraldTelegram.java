@@ -7,15 +7,15 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @JsonTypeName("TELEGRAM")
-public class HeraldChannelTelegram extends HeraldChannel {
+public class HeraldTelegram extends Herald {
     private String bot;
 
-    public HeraldChannelTelegram(){
+    public HeraldTelegram(){
         super();
     }
 
-    public HeraldChannelTelegram(String id, String type, String name, String bot) {
-        super(id, type, name);
+    public HeraldTelegram(String id, String type, String channel, String name, String bot) {
+        super(id, type, channel, name);
         this.bot = bot;
     }
 }

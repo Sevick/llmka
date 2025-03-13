@@ -31,14 +31,14 @@ import java.util.stream.Collectors;
 
 @Repository
 public class EmbeddingStore implements IEmbeddingStore {
+    private static final Logger logger = Logger.getLogger(EmbeddingStore.class);
+
     @Value("${llmka.datastore.save_interval}")
     private Duration saveInterval;
     @Value("${llmka.datastore.store_path}")
     private String storeFilePath;
 
-    private static final Logger logger = Logger.getLogger(EmbeddingStore.class);
     private final static ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
-
     private InMemoryEmbeddingStore<TextSegment> embeddingStore = new InMemoryEmbeddingStore<>();
     private Instant lastStoreSave;
 

@@ -1,5 +1,6 @@
 package com.fbytes.llmka;
 
+import com.fbytes.llmka.config.TelegramBotConfig;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

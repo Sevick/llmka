@@ -1,17 +1,19 @@
 package com.fbytes.llmka.integration.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fbytes.llmka.integration.service.HeraldConfigService;
 import com.fbytes.llmka.model.EmbeddedData;
 import com.fbytes.llmka.model.Mapping;
-import com.fbytes.llmka.model.heraldchannel.HeraldChannel;
-import com.fbytes.llmka.model.heraldchannel.HeraldChannelFactory;
-import com.fbytes.llmka.model.heraldchannel.HeraldChannelTelegram;
-import com.fbytes.llmka.service.ConfigReader.impl.HeraldChannelConfigReader;
+import com.fbytes.llmka.model.heraldchannel.Herald;
+import com.fbytes.llmka.model.heraldchannel.HeraldTelegram;
+import com.fbytes.llmka.service.Herald.IHeraldService;
 import com.fbytes.llmka.service.Herald.impl.HeraldServiceTelegram;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.event.ContextRefreshedEvent;
@@ -23,13 +25,10 @@ import org.springframework.integration.router.HeaderValueRouter;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -42,18 +41,18 @@ public class HeraldChannelConfig implements ApplicationListener<ContextRefreshed
     private String newsGroupHeader;
     @Value("${llmka.config.mappings_file}")
     private String mappingConfigFile;
-    @Value("${llmka.herald.config_file}")
-    private String heraldConfigFilePath;
-
-    @Autowired
-    private HeraldChannelFactory heraldChannelFactory;
-    @Autowired
-    private HeraldChannelConfigReader heraldChannelConfigReader;
 
     @Autowired
     private IntegrationFlowContext flowContext;
     @Autowired
     private MessageChannel heraldChannel;
+
+
+    @Autowired
+    HeraldConfigService heraldConfigService;
+
+    @Autowired
+    ApplicationContext applicationContext;
 
 
     @Override
@@ -72,7 +71,7 @@ public class HeraldChannelConfig implements ApplicationListener<ContextRefreshed
             throw new RuntimeException(e);
         }
 
-        // create pub-sub channel for each uniue "outputChannel" in mappings
+        // create pub-sub channel for each unique "outputChannel" in mappings
         Set<String> outputChannels = Arrays.stream(mappings).map(mapping -> mapping.getOutputChannel()).collect(Collectors.toSet());
         outputChannels.forEach(channelName -> {
             PublishSubscribeChannel channel = new PublishSubscribeChannel();
@@ -82,21 +81,34 @@ public class HeraldChannelConfig implements ApplicationListener<ContextRefreshed
 
         // TODO: Make generic for other heralds
         // create herald services, subscribe them to channel with channel.name==herald.name
-        List<HeraldChannel> heraldChannelTelegram = heraldChannelConfigReader.retrieveFromFile(heraldChannelFactory, new File(heraldConfigFilePath));
-        for (HeraldChannel channel : heraldChannelTelegram) {
-            if (!(channel instanceof HeraldChannelTelegram)) {
+        Map<String, List<Pair<String, IHeraldService>>> outchannelToHeraldServiceMap = new HashMap<>(); // <outputChannel, <HeraldBeanName, IHeraldService>>
+        for (Herald channel : heraldConfigService.getHeralds()) {
+            if (!(channel instanceof HeraldTelegram)) {
                 throw new RuntimeException("Invalid configuration");
             }
-            String botToken = environment.getProperty("llmka.herald.telegram.bot");
-            HeraldServiceTelegram newHeraldService = new HeraldServiceTelegram((HeraldChannelTelegram) channel);
+            HeraldServiceTelegram newHeraldService = new HeraldServiceTelegram((HeraldTelegram) channel);   // replace with factory?
             beanFactory.autowireBean(newHeraldService);
             String beanName = StringUtils.capitalize(channel.getType().toLowerCase()) + "-" + channel.getName();
             beanFactory.initializeBean(newHeraldService, beanName);
             beanFactory.registerSingleton(beanName, newHeraldService);
-
-            PublishSubscribeChannel channelBean = (PublishSubscribeChannel) beanFactory.getBean(channel.getName());
-            channelBean.subscribe(message -> newHeraldService.sendMessage((String) message.getPayload()));
+            Pair<String, IHeraldService> newHeraldPair = Pair.of(beanName, newHeraldService);
+            if (outchannelToHeraldServiceMap.containsKey(channel.getChannel())) {
+                outchannelToHeraldServiceMap.get(channel.getChannel()).add(newHeraldPair);
+            } else {
+                List<Pair<String,IHeraldService>> heraldServiceList = new ArrayList<>();
+                heraldServiceList.add(newHeraldPair);
+                outchannelToHeraldServiceMap.put(channel.getChannel(), heraldServiceList);
+            }
         }
+
+        // bind heralds to corresponding output channels
+        outchannelToHeraldServiceMap.entrySet().forEach(entry -> {
+            PublishSubscribeChannel outChannel = ((PublishSubscribeChannel) beanFactory.getBean(entry.getKey()));
+            entry.getValue().forEach(heraldNameService -> {
+                outChannel.subscribe(message -> heraldNameService.getRight().sendMessage((String) message.getPayload()));
+            });
+        });
+
 
         // Router
         HeaderValueRouter router = new HeaderValueRouter(newsGroupHeader);

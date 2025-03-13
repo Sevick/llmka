@@ -16,16 +16,16 @@ import java.util.Arrays;
 import java.util.Set;
 
 @Service
-public class HeraldChannelFactory implements IConfigFactory<HeraldChannel> {
-    private static final Logger logger = Logger.getLogger(HeraldChannelFactory.class);
+public class HeraldFactory implements IConfigFactory<Herald> {
+    private static final Logger logger = Logger.getLogger(HeraldFactory.class);
     private static final ObjectMapper mapper = new ObjectMapper();
 
     @PostConstruct
     private void init() {
         // search for HeraldChannel ancestors in the same package and register jackson subtypes
         ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(false);
-        provider.addIncludeFilter(new AssignableTypeFilter(HeraldChannel.class));
-        Set<BeanDefinition> components = provider.findCandidateComponents(HeraldChannel.class.getPackageName().replaceAll("[.]", "/"));
+        provider.addIncludeFilter(new AssignableTypeFilter(Herald.class));
+        Set<BeanDefinition> components = provider.findCandidateComponents(Herald.class.getPackageName().replaceAll("[.]", "/"));
         components.forEach(component -> {
             logger.debug("Register HeraldChannel subtype: {}", component.getBeanClassName());
             try {
@@ -40,8 +40,8 @@ public class HeraldChannelFactory implements IConfigFactory<HeraldChannel> {
     }
 
     @Override
-    public HeraldChannel getParams(String json) throws JsonProcessingException {
-        return mapper.readValue(json, HeraldChannel.class);
+    public Herald getParams(String json) throws JsonProcessingException {
+        return mapper.readValue(json, Herald.class);
     }
 
     private String getJsonClassAnnotationValue(Class<?> cl) {
