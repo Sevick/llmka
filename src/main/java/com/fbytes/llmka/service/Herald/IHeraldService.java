@@ -1,5 +1,7 @@
 package com.fbytes.llmka.service.Herald;
 
-public interface IHeraldService {
-    void sendMessage(String text);
+import com.fbytes.llmka.model.heraldmessage.HeraldMessage;
+
+public interface IHeraldService<T extends HeraldMessage> {
+    void sendMessage(T msg);
 }

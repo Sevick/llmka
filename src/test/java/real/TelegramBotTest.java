@@ -2,6 +2,7 @@ package real;
 
 import com.fbytes.llmka.LLMka;
 import com.fbytes.llmka.config.TelegramBotConfig;
+import com.fbytes.llmka.model.heraldmessage.TelegramMessage;
 import com.fbytes.llmka.service.Herald.impl.HeraldServiceTelegram;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,6 @@ public class TelegramBotTest {
         context.getAutowireCapableBeanFactory().autowireBean(newHeraldService);
         context.getBeanFactory().registerSingleton("TestHerald", newHeraldService);
 
-        newHeraldService.sendMessage("TestMessage#4");
+        newHeraldService.sendMessage(new TelegramMessage("TestMessage#4"));
     }
 }

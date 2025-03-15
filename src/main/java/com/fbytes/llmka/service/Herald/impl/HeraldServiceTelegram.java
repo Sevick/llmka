@@ -3,6 +3,7 @@ package com.fbytes.llmka.service.Herald.impl;
 import com.fbytes.llmka.config.TelegramBotConfig;
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.heraldchannel.HeraldTelegram;
+import com.fbytes.llmka.model.heraldmessage.TelegramMessage;
 import com.fbytes.llmka.service.Herald.IHeraldService;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +17,7 @@ import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 import java.util.Optional;
 
 
-public class HeraldServiceTelegram implements IHeraldService {
+public class HeraldServiceTelegram implements IHeraldService<TelegramMessage> {
     private static final Logger logger = Logger.getLogger(HeraldServiceTelegram.class);
 
     @Autowired
@@ -34,6 +35,7 @@ public class HeraldServiceTelegram implements IHeraldService {
     public HeraldServiceTelegram(HeraldTelegram heraldChannelTelegram) {
         this.botUsername = heraldChannelTelegram.getBot();
     }
+
 
     @PostConstruct
     private void init() {
@@ -67,10 +69,10 @@ public class HeraldServiceTelegram implements IHeraldService {
 
 
     @Override
-    public void sendMessage(String text) {
+    public void sendMessage(TelegramMessage msg) {
         SendMessage message = SendMessage.builder()
                 .chatId(tgChannel)
-                .text(text)
+                .text(msg.getMessageText())
                 .build();
         message.disableWebPagePreview();
         message.setParseMode("Markdown");

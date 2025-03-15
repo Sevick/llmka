@@ -51,6 +51,7 @@ llmka:
   herald:
     news_group_header: "newsGroupHeader"
     config_file: ${secret.telegram.config_file}
+    default_queue_size: 200
     telegram:
       poll_delay: 30
       bot:
