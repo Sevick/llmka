@@ -14,8 +14,4 @@ public class AppConfig {
         return new RestTemplate();
     }
 
-    @Bean
-    public TimedAspect timedAspect(MeterRegistry registry) {
-        return new TimedAspect(registry);
-    }
 }

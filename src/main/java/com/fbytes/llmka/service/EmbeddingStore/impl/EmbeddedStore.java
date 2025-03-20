@@ -1,8 +1,7 @@
 package com.fbytes.llmka.service.EmbeddingStore.impl;
 
 import com.fbytes.llmka.logger.Logger;
-import com.fbytes.llmka.model.NewsCheckRejectReason;
-import com.fbytes.llmka.service.EmbeddingStore.IEmbeddingStore;
+import com.fbytes.llmka.service.EmbeddingStore.IEmbeddedStore;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.rag.content.Content;
@@ -12,7 +11,6 @@ import dev.langchain4j.store.embedding.EmbeddingSearchResult;
 import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore;
 import io.micrometer.core.annotation.Timed;
 import jakarta.annotation.PostConstruct;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
@@ -29,22 +27,31 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
-@Repository
-public class EmbeddingStore implements IEmbeddingStore {
-    private static final Logger logger = Logger.getLogger(EmbeddingStore.class);
+public class EmbeddedStore implements IEmbeddedStore {
+    private static final Logger logger = Logger.getLogger(EmbeddedStore.class);
 
     @Value("${llmka.datastore.save_interval}")
     private Duration saveInterval;
     @Value("${llmka.datastore.store_path}")
-    private String storeFilePath;
+    private String storePath;
+    @Value("${llmka.datastore.store_extension}")
+    private String storeExtension;
 
     private final static ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     private InMemoryEmbeddingStore<TextSegment> embeddingStore = new InMemoryEmbeddingStore<>();
     private Instant lastStoreSave;
 
+    private final String storeName;
+    private String storeFilePath;
+
+    public EmbeddedStore(String storeName) {
+        this.storeName = storeName;
+    }
+
     @PostConstruct
     private void init() {
         lastStoreSave = Instant.now();
+        storeFilePath = storePath + storeName + storeExtension;
         try {
             restore(storeFilePath);
         } catch (Exception e) {
@@ -54,45 +61,42 @@ public class EmbeddingStore implements IEmbeddingStore {
 
 
     @Override
-    @Timed(value = "llmka.embeddingstore.store_time", description = "time to check news for duplicates")
+    @Timed(value = "llmka.embeddedstore.store_time", description = "time to check news for duplicates")
     public void store(List<TextSegment> segments, List<Embedding> embeddings) {
         try {
             readWriteLock.writeLock().lock();
             embeddingStore.addAll(embeddings, segments);
-            if (Duration.between(lastStoreSave, Instant.now()).compareTo(saveInterval) > 0){
+            if (Duration.between(lastStoreSave, Instant.now()).compareTo(saveInterval) > 0) {
                 lastStoreSave = Instant.now();
                 save(storeFilePath);
             }
-        }
-        finally {
+        } finally {
             readWriteLock.writeLock().unlock();
         }
     }
 
     @Override
-    public void removeIDes(Collection<String> idList){
-        try{
+    public void removeIDes(Collection<String> idList) {
+        try {
             readWriteLock.writeLock().lock();
             embeddingStore.removeAll(idList);
             save(storeFilePath);
             logger.debug("Removed {} entries from keystore: {}", idList.size(), idList);
-        }
-        finally {
+        } finally {
             readWriteLock.writeLock().unlock();
         }
     }
 
     @Override
-    public void removeOtherIDes(Collection<String> idList){
+    public void removeOtherIDes(Collection<String> idList) {
         embeddingStore.removeAll(el -> !idList.contains(el));
         save(storeFilePath);
         logger.debug("Store cleaned up. Entries left: {}", idList.size());
     }
 
 
-
     @Override
-    @Timed(value = "llmka.embeddingstore.retrieve_time", description = "time to check news for duplicates")
+    @Timed(value = "llmka.embeddedstore.retrieve_time", description = "time to check news for duplicates")
     public Optional<List<Content>> retrieve(Embedding embeddedQuery, int maxResult, double minScoreLimit) {
         EmbeddingSearchRequest searchRequest = EmbeddingSearchRequest.builder()
                 .queryEmbedding(embeddedQuery)
@@ -132,13 +136,19 @@ public class EmbeddingStore implements IEmbeddingStore {
     }
 
     private void restore(String storeFilePath) {
-        embeddingStore = InMemoryEmbeddingStore.fromFile(storeFilePath);
+        try {
+            InMemoryEmbeddingStore newEmbeddingStore = InMemoryEmbeddingStore.fromFile(storeFilePath);
+            embeddingStore = newEmbeddingStore;
+        }
+        catch (Exception e){
+            logger.warn("Unable to restore from file: {}", storeFilePath);
+        }
         logger.info("Store restored from: {}", storeFilePath);
     }
 
 
     @Override
-    public Optional<List<Content>> checkAndStore(List<TextSegment> segments, List<Embedding> embeddingList, double minScoreLimit){
+    public Optional<List<Content>> checkAndStore(List<TextSegment> segments, List<Embedding> embeddingList, double minScoreLimit) {
         Optional<List<Content>> result = retrieve(embeddingList, 1, minScoreLimit);
         if (result.isEmpty()) {
             try {
@@ -147,8 +157,7 @@ public class EmbeddingStore implements IEmbeddingStore {
                 if (!recheckResult.isEmpty())
                     return recheckResult;
                 store(segments, embeddingList);
-            }
-            finally {
+            } finally {
                 readWriteLock.writeLock().unlock();
             }
             return Optional.empty();

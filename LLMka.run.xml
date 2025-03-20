@@ -1,0 +1,16 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="LLMka" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="com.fbytes.llmka.LLMka" />
+    <module name="LLMka" />
+    <option name="PROGRAM_PARAMETERS" value="--spring.profiles.active=dev,metrics" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="com.fbytes.llmka.integration.config.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

@@ -6,6 +6,6 @@ import com.fbytes.llmka.model.NewsCheckRejectReason;
 import java.util.Optional;
 
 public interface INewsDataCheck {
-    Optional<NewsCheckRejectReason> checkNewsData(EmbeddedData newsData);
-    void cleanupStore();
+    Optional<NewsCheckRejectReason> checkNewsData(String schema, EmbeddedData newsData);
+    void cleanupStore(String schema);
 }

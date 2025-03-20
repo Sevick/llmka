@@ -9,12 +9,17 @@ import org.springframework.integration.config.EnableMessageHistory;
 import org.springframework.integration.http.config.EnableIntegrationGraphController;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
+/*
+    Profiles (config/profiles):
+        dev - enables CommandService REST controller
+        metrics-enabled - enables interceptor to register metrics
+ */
+
 @SpringBootApplication
 @EnableIntegration
 @EnableWebMvc
-@EnableMessageHistory
 @EnableConfigurationProperties(TelegramBotConfig.class)
-@EnableIntegrationGraphController(path = "/igraph")
+//@EnableIntegrationGraphController
 public class LLMka {
     public static void main(String[] args) {
         new SpringApplicationBuilder(LLMka.class)

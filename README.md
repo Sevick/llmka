@@ -2,9 +2,18 @@
 
 POC of news deduplicator using transformers
 
-Flow:
+LLMka.run.xml - Idea run configuration (dev)
 
-config folder -> [config file] -> [news source] -> [news] -> [embedding] -> check for duplicates -> post to telegram channel
+
+Data flow (check /doc for drawio schemas):
+
+config folder -> 
+	[config file] -> 
+	[news source] -> 
+	[news] -> 
+	[embedding] -> <check for duplicates> / store 
+	[telegram message] ->
+		post to telegram channel
 
 
 First prototype:

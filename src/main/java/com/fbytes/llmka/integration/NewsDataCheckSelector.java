@@ -21,16 +21,22 @@ public class NewsDataCheckSelector implements MessageSelector {
 
     @Autowired
     private INewsDataCheck newsDataCheck;
+    @Value("${llmka.herald.news_group_header}")
+    private String newsGroupHeader;
 
     private final MessageChannel rejectChannel;
 
-    public NewsDataCheckSelector(MessageChannel rejectChannel) {
+
+    public NewsDataCheckSelector(@Autowired MessageChannel rejectChannel) {
         this.rejectChannel = rejectChannel;
     }
 
     @Override
     public boolean accept(Message<?> message) {
-        Optional<NewsCheckRejectReason> result = newsDataCheck.checkNewsData((EmbeddedData) message.getPayload());
+        String schema = (String) message.getHeaders().get(newsGroupHeader);
+        if (schema == null)
+            throw new RuntimeException("NewsCheckSelector extects " + newsGroupHeader + " header to be set");
+        Optional<NewsCheckRejectReason> result = newsDataCheck.checkNewsData(schema, (EmbeddedData) message.getPayload());
         if (!result.isEmpty()) {
             Message<?> rejectedMessage = MessageBuilder.fromMessage(message)
                     .setHeader(rejectReasonHeader, result.get().getReason())

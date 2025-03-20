@@ -3,7 +3,8 @@ import com.fbytes.llmka.model.NewsCheckRejectReason;
 import com.fbytes.llmka.model.NewsData;
 import com.fbytes.llmka.service.Embedding.IEmbeddingService;
 import com.fbytes.llmka.service.Embedding.impl.EmbeddingService;
-import com.fbytes.llmka.service.EmbeddingStore.impl.EmbeddingStore;
+import com.fbytes.llmka.service.EmbeddingStore.impl.EmbeddedStore;
+import com.fbytes.llmka.service.EmbeddingStore.impl.EmbeddedStoreService;
 import com.fbytes.llmka.service.NewsDataCheck.impl.NewsDataCheck;
 import config.TestConfig;
 import org.apache.commons.lang3.tuple.Pair;
@@ -23,7 +24,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-@SpringBootTest(classes = {EmbeddingService.class, EmbeddingStore.class, NewsDataCheck.class})
+@SpringBootTest(classes = {EmbeddingService.class, NewsDataCheck.class, EmbeddedStoreService.class})
 @ContextConfiguration(classes = {TestConfig.class})
 public class NewsDataCheckTest {
 
@@ -85,9 +86,9 @@ public class NewsDataCheckTest {
                 .build();
 
         EmbeddedData embeddedNewsData = embeddingService.embedNewsData(newsData);
-        newsDataCheckService.checkNewsData(embeddedNewsData);
+        newsDataCheckService.checkNewsData("testschema", embeddedNewsData);
 
-        Optional<NewsCheckRejectReason> duplication = newsDataCheckService.checkNewsData(embeddedNewsData);
+        Optional<NewsCheckRejectReason> duplication = newsDataCheckService.checkNewsData("testschema", embeddedNewsData);
         Assert.isTrue(!duplication.isEmpty(), "Duplication not detected");
         Assert.isTrue(duplication.get().getReason() == NewsCheckRejectReason.REASON.META_DUPLICATION, "Record rejected, but reject reason is not META_DUPLICATION");
     }

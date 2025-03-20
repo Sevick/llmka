@@ -7,8 +7,8 @@ import com.fbytes.llmka.service.DataRetriver.IDataRetriever;
 import com.fbytes.llmka.service.DataRetriver.impl.RssRetriever;
 import com.fbytes.llmka.service.Embedding.IEmbeddingService;
 import com.fbytes.llmka.service.Embedding.impl.EmbeddingService;
-import com.fbytes.llmka.service.EmbeddingStore.IEmbeddingStore;
-import com.fbytes.llmka.service.EmbeddingStore.impl.EmbeddingStore;
+import com.fbytes.llmka.service.EmbeddingStore.IEmbeddedStoreService;
+import com.fbytes.llmka.service.EmbeddingStore.impl.EmbeddedStoreService;
 import config.TestConfig;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.rag.content.Content;
@@ -23,14 +23,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-@SpringBootTest(classes = {EmbeddingService.class, EmbeddingStore.class, RssRetriever.class, RestTemplate.class})
+@SpringBootTest(classes = {EmbeddingService.class, EmbeddedStoreService.class, RssRetriever.class, RestTemplate.class})
 @ContextConfiguration(classes = {TestConfig.class})
 public class FlowTest {
 
     @Autowired
     private IDataRetriever<RssNewsSource> rssRetriever;
     @Autowired
-    private IEmbeddingStore embeddingStore;
+    private IEmbeddedStoreService embeddingStoreService;
 
     @Autowired
     private IEmbeddingService embeddingService;
@@ -47,13 +47,13 @@ public class FlowTest {
         Optional<Stream<NewsData>> dataStream = rssRetriever.retrieveData(rssDataSource);
         dataStream.ifPresent(list -> list.forEach(newsData -> {
                     EmbeddedData embeddings = embeddingService.embedNewsData(newsData);
-                    embeddingStore.store(embeddings.getSegments(), embeddings.getEmbeddings());
+                    embeddingStoreService.store("testschema", embeddings.getSegments(), embeddings.getEmbeddings());
                 }
         ));
 
         String query = "weather forecast";
         Embedding embeddings = embeddingService.embedStr(query);
-        Optional<List<Content>> result = embeddingStore.retrieve(embeddings, 3, 0.5f);
+        Optional<List<Content>> result = embeddingStoreService.retrieve("testschema", embeddings, 3, 0.5f);
 
         System.out.println(result);
     }

@@ -8,7 +8,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-public interface IEmbeddingStore {
+public interface IEmbeddedStore {
     void store(List<TextSegment> segments, List<Embedding> embeddingList);
     Optional<List<Content>> checkAndStore(List<TextSegment> segments, List<Embedding> embeddingList, double minScoreLimit);
 

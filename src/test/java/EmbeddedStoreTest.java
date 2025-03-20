@@ -2,12 +2,15 @@ import com.fbytes.llmka.model.EmbeddedData;
 import com.fbytes.llmka.model.NewsData;
 import com.fbytes.llmka.service.Embedding.IEmbeddingService;
 import com.fbytes.llmka.service.Embedding.impl.EmbeddingService;
-import com.fbytes.llmka.service.EmbeddingStore.IEmbeddingStore;
-import com.fbytes.llmka.service.EmbeddingStore.impl.EmbeddingStore;
+import com.fbytes.llmka.service.EmbeddingStore.IEmbeddedStore;
+import com.fbytes.llmka.service.EmbeddingStore.impl.EmbeddedStore;
 import dev.langchain4j.rag.content.Content;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.util.Assert;
 
 import java.util.Arrays;
@@ -15,13 +18,26 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-@SpringBootTest(classes = {EmbeddingService.class, EmbeddingStore.class})
-public class EmbeddingServiceTest {
+@SpringBootTest(classes = {EmbeddingService.class})
+public class EmbeddedStoreTest {
 
     @Autowired
     private IEmbeddingService embeddingService;
+
     @Autowired
-    private IEmbeddingStore embeddingStore;
+    private ApplicationContext context;
+
+
+    private IEmbeddedStore embeddedStore;
+
+
+    @BeforeEach
+    void setupBeforeAll() {
+        embeddedStore = new EmbeddedStore("testschema");
+        context.getAutowireCapableBeanFactory().autowireBean(embeddedStore);
+        context.getAutowireCapableBeanFactory().initializeBean(embeddedStore, "testStoreBean");
+    }
+
 
     @Test
     public void testEmbeddingService() {
@@ -66,12 +82,12 @@ public class EmbeddingServiceTest {
         Optional<Stream<NewsData>> dataStream = Optional.of(Arrays.asList(newsData1, newsData2).stream());
         dataStream.ifPresent(list -> list.forEach(newsData -> {
                     EmbeddedData embeddings = embeddingService.embedNewsData(newsData);
-                    embeddingStore.store(embeddings.getSegments(), embeddings.getEmbeddings());
+                    embeddedStore.store(embeddings.getSegments(), embeddings.getEmbeddings());
                 }
         ));
 
         EmbeddedData embeddings = embeddingService.embedNewsData(newsData3);
-        Optional<List<Content>> result = embeddingStore.retrieve(embeddings.getEmbeddings(), 3, 0.85f);
+        Optional<List<Content>> result = embeddedStore.retrieve(embeddings.getEmbeddings(), 3, 0.85f);
 
         Assert.isTrue(!result.isEmpty() && result.get().size() > 0, "No similar news found");
     }

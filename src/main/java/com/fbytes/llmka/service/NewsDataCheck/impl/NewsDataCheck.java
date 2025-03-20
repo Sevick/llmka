@@ -1,9 +1,10 @@
 package com.fbytes.llmka.service.NewsDataCheck.impl;
 
+import com.fbytes.llmka.config.profiles.merics.ParamTimedMetric;
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.EmbeddedData;
 import com.fbytes.llmka.model.NewsCheckRejectReason;
-import com.fbytes.llmka.service.EmbeddingStore.IEmbeddingStore;
+import com.fbytes.llmka.service.EmbeddingStore.IEmbeddedStoreService;
 import com.fbytes.llmka.service.NewsDataCheck.INewsDataCheck;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.rag.content.Content;
@@ -22,6 +23,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -39,16 +41,18 @@ public class NewsDataCheck implements INewsDataCheck {
     private Float scoreLimit;
 
     @Autowired
-    private IEmbeddingStore embeddingStore;
+    private IEmbeddedStoreService embeddingStoreService;
     @Autowired
     private MeterRegistry meterRegistry;
 
     private static final Logger logger = Logger.getLogger(NewsDataCheck.class);
 
+    // Lock used to block hashMap for compressions, so compression accuires write lock and usual map manipulations - read lock
     private final ReadWriteLock metaHashCompressLock = new ReentrantReadWriteLock();
-    private final AtomicInteger metaHashSeq = new AtomicInteger(0);   // reset on metaHash compress
+    // used to track elements order, reset on metaHash compress (existing elements re-enumerated)
+    private final AtomicInteger metaHashSeq = new AtomicInteger(0);
 
-    private Map<BigInteger, Pair<Integer, String>> metaHash = new ConcurrentHashMap<>();   // <MD5, <seq#, id>>
+    private ConcurrentMap<BigInteger, Pair<Integer, String>> metaHash = new ConcurrentHashMap<>();   // <MD5, <seq#, id>>
 
     @PostConstruct
     private void init() {
@@ -60,11 +64,12 @@ public class NewsDataCheck implements INewsDataCheck {
     }
 
     @Override
-    @Timed(value = "llmka.newsdatacheck.time", description = "time to check news for duplicates", percentiles = {0.5, 0.9})
-    public Optional<NewsCheckRejectReason> checkNewsData(EmbeddedData embeddedData) {
-        if (!checkMeta(embeddedData))
+    //@Timed(value = "llmka.newsdatacheck.time", description = "time to check news for duplicates", percentiles = {0.5, 0.9})
+    @ParamTimedMetric(key = "schema")
+    public Optional<NewsCheckRejectReason> checkNewsData(String schema, EmbeddedData embeddedData) {
+        if (!checkMeta(schema, embeddedData))
             return Optional.of(new NewsCheckRejectReason(NewsCheckRejectReason.REASON.META_DUPLICATION, ""));
-        Optional<List<Content>> result = embeddingStore.checkAndStore(embeddedData.getSegments(), embeddedData.getEmbeddings(), scoreLimit);
+        Optional<List<Content>> result = embeddingStoreService.checkAndStore(schema, embeddedData.getSegments(), embeddedData.getEmbeddings(), scoreLimit);
         if (!result.isEmpty())
             return Optional.of(new NewsCheckRejectReason(NewsCheckRejectReason.REASON.CLOSE_MATCH, result.get().get(0).textSegment().text()));
         logger.debug("News check passed");
@@ -73,8 +78,7 @@ public class NewsDataCheck implements INewsDataCheck {
 
 
     // check hash of meta for each segment
-    @Timed(value = "llmka.newsdatacheck.checkmeta.time", description = "time to check meta for duplicates", percentiles = {0.5, 0.9})
-    private boolean checkMeta(EmbeddedData embeddedData) {
+    private boolean checkMeta(String schema, EmbeddedData embeddedData) {
         TextSegment firstSegment = embeddedData.getSegments().get(0);
         String id = firstSegment.metadata().getString("id");
         String metaStr = firstSegment.metadata().getString("link");
@@ -93,9 +97,9 @@ public class NewsDataCheck implements INewsDataCheck {
             if (metaHash.size() > metaHashSizeLimit) {
                 try {
                     metaHashCompressLock.writeLock().lock();
-                    Pair<Map<BigInteger, Pair<Integer, String>>, List<String>> compressionResult = compressMetaHash(metaHashSizeCore);
+                    Pair<ConcurrentMap<BigInteger, Pair<Integer, String>>, List<String>> compressionResult = compressMetaHash(metaHashSizeCore);
                     metaHash = compressionResult.getLeft();
-                    embeddingStore.removeIDes(compressionResult.getRight());
+                    embeddingStoreService.removeIDes(schema, compressionResult.getRight());
                 } finally {
                     metaHashCompressLock.writeLock().unlock();
                 }
@@ -107,18 +111,19 @@ public class NewsDataCheck implements INewsDataCheck {
 
     // remove all IDes, that are not in metaHash
     @Timed(value = "llmka.newsdatacheck.cleanupstore.time", description = "time to cleanup the store", percentiles = {0.5, 0.9})
-    public void cleanupStore() {
+    public void cleanupStore(String schema) {
         logger.info("cleanupStore. Current hash size: {}", metaHash.size());
         Set<String> idsSet = metaHash.entrySet().stream()
                 .map(entry -> entry.getValue().getRight())
                 .collect(Collectors.toSet());
-        embeddingStore.removeOtherIDes(idsSet);
+        embeddingStoreService.removeOtherIDes(schema, idsSet);
     }
 
 
     // returns <newHashMap, List<removedIDes>
-    @Timed(value = "llmka.newsdatacheck.compressMetaHash.time", description = "time to compress metaHash", percentiles = {0.5, 0.9})
-    private Pair<Map<BigInteger, Pair<Integer, String>>, List<String>> compressMetaHash(int reduceToSize) {
+    //@Timed(value = "llmka.newsdatacheck.compressMetaHash.time", description = "time to compress metaHash", percentiles = {0.5, 0.9})
+    // TODO: Add metric manually - annotations are not working on private method invokations
+    private Pair<ConcurrentMap<BigInteger, Pair<Integer, String>>, List<String>> compressMetaHash(int reduceToSize) {
         logger.info("Compressing metaHash. Current size: {}", metaHash.size());
         Map<BigInteger, Pair<Integer, String>> newMetaMap = new ConcurrentHashMap();
         Map.Entry<BigInteger, Pair<Integer, String>>[] entriesArr = metaHash.entrySet().toArray(new Map.Entry[0]);

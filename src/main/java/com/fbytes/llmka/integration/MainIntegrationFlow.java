@@ -1,13 +1,13 @@
 package com.fbytes.llmka.integration;
 
 import com.fbytes.llmka.logger.Logger;
+import com.fbytes.llmka.model.EmbeddedData;
 import com.fbytes.llmka.model.NewsData;
 import com.fbytes.llmka.model.newssource.NewsSource;
 import com.fbytes.llmka.model.newssource.NewsSourceFactory;
 import com.fbytes.llmka.service.ConfigReader.impl.ConfigReader;
 import com.fbytes.llmka.service.DataRetriver.IDataRetriever;
 import com.fbytes.llmka.service.Embedding.IEmbeddingService;
-import com.fbytes.llmka.service.NewsSourceConfigReader.INewsSourceConfigReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,18 +34,15 @@ public class MainIntegrationFlow {
     private String configFolder;
     @Value("${llmka.datacheck.reject.reject_reason_header}")
     private String rejectReasonHeader;
+    @Value("${llmka.datacheck.reject.reject_explain_header}")
+    private String rejectExplainHeader;
     @Value("${llmka.herald.news_group_header}")
     private String newsGroupHeader;
 
     @Autowired
     private ApplicationContext applicationContext;
-//    @Autowired
-//    private INewsSourceConfigReader newsSourceConfigReader;
     @Autowired
     private PollerMetadata configPoller;
-    @Autowired
-    private PollerMetadata telegramPoller;
-
     @Autowired
     ConfigReader<NewsSource> newsSourceConfigReader;
     @Autowired
@@ -141,7 +138,9 @@ public class MainIntegrationFlow {
     public org.springframework.integration.dsl.IntegrationFlow newsDataCheckChannelRejectBind() {
         return org.springframework.integration.dsl.IntegrationFlow
                 .from("newsDataCheckChannelReject")
-                .handle(m -> logger.info("Reject reason: {}  Message: {}", m.getHeaders().get(rejectReasonHeader), m.getPayload()))
+                .handle(m -> logger.info("Reject Message:\n{}\nReason: {}\nExplain: {}", ((EmbeddedData) m.getPayload()).getNewsData(),
+                        m.getHeaders().get(rejectReasonHeader), m.getHeaders().get(rejectExplainHeader))
+                )
                 .get();
         //.nullChannel();
     }

@@ -1,3 +1,6 @@
+server:
+  port: 8080
+
 spring:
   config:
     import:
@@ -7,9 +10,6 @@ spring:
   main:
     banner-mode: "console" # Disable the startup banner    console/log/off
 
-
-server:
-  port: 8080
 
 management:
   endpoints:
@@ -38,6 +38,7 @@ llmka:
     segment_overlap: 128
   datastore:
     save_interval: PT5M
+    store_extension: ".json"
     store_path: ${secret.datastore.store_path}
   datacheck:
     metahash_size_limit: 512

@@ -12,7 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 @AllArgsConstructor
 @NoArgsConstructor
 public class HeraldConfigService {
-    Herald[] heralds;
+    private Herald[] heralds;
 
     static public String heraldName(Herald herald){
         return StringUtils.capitalize(herald.getType().toLowerCase()) + "-" + herald.getName();
