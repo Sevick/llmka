@@ -26,11 +26,10 @@ public class CommandService {
     public ResponseEntity compressStore(@RequestParam(name = "schema", required = true) String schema) {
         try {
             newsDataCheck.cleanupStore(schema);
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok().body("Store compressed: " + schema);
     }
 
 
