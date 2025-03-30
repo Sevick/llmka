@@ -2,7 +2,7 @@ package com.fbytes.llmka.integration;
 
 import com.fbytes.llmka.model.EmbeddedData;
 import com.fbytes.llmka.model.NewsCheckRejectReason;
-import com.fbytes.llmka.service.NewsDataCheck.INewsDataCheck;
+import com.fbytes.llmka.service.NewsCheck.INewsCheck;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.integration.core.MessageSelector;
@@ -20,7 +20,7 @@ public class NewsDataCheckSelector implements MessageSelector {
     private String rejectExplainHeader;
 
     @Autowired
-    private INewsDataCheck newsDataCheck;
+    private INewsCheck newsDataCheck;
     @Value("${llmka.herald.news_group_header}")
     private String newsGroupHeader;
 
@@ -36,7 +36,7 @@ public class NewsDataCheckSelector implements MessageSelector {
         String schema = (String) message.getHeaders().get(newsGroupHeader);
         if (schema == null)
             throw new RuntimeException("NewsCheckSelector extects " + newsGroupHeader + " header to be set");
-        Optional<NewsCheckRejectReason> result = newsDataCheck.checkNewsData(schema, (EmbeddedData) message.getPayload());
+        Optional<NewsCheckRejectReason> result = newsDataCheck.checkNews(schema, (EmbeddedData) message.getPayload());
         if (!result.isEmpty()) {
             Message<?> rejectedMessage = MessageBuilder.fromMessage(message)
                     .setHeader(rejectReasonHeader, result.get().getReason())

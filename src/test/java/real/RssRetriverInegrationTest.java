@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+@Disabled
 @SpringBootTest(classes = {RssRetriever.class, RestTemplate.class})
 public class RssRetriverInegrationTest {
 
@@ -24,7 +25,6 @@ public class RssRetriverInegrationTest {
     @Autowired
     private IDataRetriever<RssNewsSource> rssRetriever;
 
-    @Disabled
     @Test
     public void testRealSource() {
         String rssUrl = "https://www.vesty.co.il/3rdparty/mobile/rss/vesty/13148/";

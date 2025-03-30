@@ -11,6 +11,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ConfigurableApplicationContext;
 
+@Disabled
 @SpringBootTest(classes = LLMka.class)
 @EnableConfigurationProperties(TelegramBotConfig.class)
 public class TelegramBotTest {
@@ -22,7 +23,7 @@ public class TelegramBotTest {
 
     private final String testChannel = "xxxxx";
 
-    @Disabled
+
     @Test
     public void sendMessageTest() {
 

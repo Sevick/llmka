@@ -2,9 +2,11 @@ package com.fbytes.llmka.model.heraldmessage;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper=true)
 public class TelegramMessage extends HeraldMessage{
     private String messageText;
 

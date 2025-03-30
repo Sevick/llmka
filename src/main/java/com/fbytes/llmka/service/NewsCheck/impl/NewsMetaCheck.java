@@ -1,14 +1,12 @@
-package com.fbytes.llmka.service.NewsDataCheck.impl;
+package com.fbytes.llmka.service.NewsCheck.impl;
 
 import com.fbytes.llmka.config.profiles.merics.ParamTimedMetric;
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.EmbeddedData;
+import com.fbytes.llmka.model.INewsIDStore;
 import com.fbytes.llmka.model.NewsCheckRejectReason;
-import com.fbytes.llmka.service.EmbeddingStore.IEmbeddedStoreService;
-import com.fbytes.llmka.service.NewsDataCheck.INewsDataCheck;
+import com.fbytes.llmka.service.NewsCheck.INewsCheck;
 import dev.langchain4j.data.segment.TextSegment;
-import dev.langchain4j.rag.content.Content;
-import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
@@ -31,21 +29,16 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Service
-public class NewsDataCheck implements INewsDataCheck {
+public class NewsMetaCheck implements INewsCheck, INewsIDStore {
+    private static final Logger logger = Logger.getLogger(NewsMetaCheck.class);
 
     @Value("${llmka.datacheck.metahash_size_limit:64}")
     private Integer metaHashSizeLimit;
     @Value("${llmka.datacheck.metahash_size_core:32}")
     private Integer metaHashSizeCore;
-    @Value("#{T(Float).parseFloat('${llmka.datacheck.score_limit}')}")
-    private Float scoreLimit;
 
-    @Autowired
-    private IEmbeddedStoreService embeddingStoreService;
     @Autowired
     private MeterRegistry meterRegistry;
-
-    private static final Logger logger = Logger.getLogger(NewsDataCheck.class);
 
     // Lock used to block hashMap for compressions, so compression accuires write lock and usual map manipulations - read lock
     private final ReadWriteLock metaHashCompressLock = new ReentrantReadWriteLock();
@@ -54,9 +47,12 @@ public class NewsDataCheck implements INewsDataCheck {
 
     private ConcurrentMap<BigInteger, Pair<Integer, String>> metaHash = new ConcurrentHashMap<>();   // <MD5, <seq#, id>>
 
+
     @PostConstruct
     private void init() {
-        Gauge.builder("llmka.newsdatacheck.metahash.size", fetchMetaHashSize()).register(meterRegistry);
+        if (meterRegistry != null) {
+            Gauge.builder("llmka.newsmetacheck.metahash.size", fetchMetaHashSize()).register(meterRegistry);
+        }
     }
 
     private Supplier<Number> fetchMetaHashSize() {
@@ -64,21 +60,8 @@ public class NewsDataCheck implements INewsDataCheck {
     }
 
     @Override
-    //@Timed(value = "llmka.newsdatacheck.time", description = "time to check news for duplicates", percentiles = {0.5, 0.9})
     @ParamTimedMetric(key = "schema")
-    public Optional<NewsCheckRejectReason> checkNewsData(String schema, EmbeddedData embeddedData) {
-        if (!checkMeta(schema, embeddedData))
-            return Optional.of(new NewsCheckRejectReason(NewsCheckRejectReason.REASON.META_DUPLICATION, ""));
-        Optional<List<Content>> result = embeddingStoreService.checkAndStore(schema, embeddedData.getSegments(), embeddedData.getEmbeddings(), scoreLimit);
-        if (!result.isEmpty())
-            return Optional.of(new NewsCheckRejectReason(NewsCheckRejectReason.REASON.CLOSE_MATCH, result.get().get(0).textSegment().text()));
-        logger.debug("News check passed");
-        return Optional.empty();
-    }
-
-
-    // check hash of meta for each segment
-    private boolean checkMeta(String schema, EmbeddedData embeddedData) {
+    public Optional<NewsCheckRejectReason> checkNews(String schema, EmbeddedData embeddedData) {
         TextSegment firstSegment = embeddedData.getSegments().get(0);
         String id = firstSegment.metadata().getString("id");
         String metaStr = firstSegment.metadata().getString("link");
@@ -92,37 +75,26 @@ public class NewsDataCheck implements INewsDataCheck {
         }
 
         if (result != null) {
-            return false;
+            return Optional.of(new NewsCheckRejectReason(NewsCheckRejectReason.REASON.META_DUPLICATION));
         } else {
             if (metaHash.size() > metaHashSizeLimit) {
                 try {
                     metaHashCompressLock.writeLock().lock();
                     Pair<ConcurrentMap<BigInteger, Pair<Integer, String>>, List<String>> compressionResult = compressMetaHash(metaHashSizeCore);
                     metaHash = compressionResult.getLeft();
-                    embeddingStoreService.removeIDes(schema, compressionResult.getRight());
                 } finally {
                     metaHashCompressLock.writeLock().unlock();
                 }
             }
-            return true;
+            return Optional.empty();
         }
-    }
-
-
-    // remove all IDes, that are not in metaHash
-    @Timed(value = "llmka.newsdatacheck.cleanupstore.time", description = "time to cleanup the store", percentiles = {0.5, 0.9})
-    public void cleanupStore(String schema) {
-        logger.info("cleanupStore. Current hash size: {}", metaHash.size());
-        Set<String> idsSet = metaHash.entrySet().stream()
-                .map(entry -> entry.getValue().getRight())
-                .collect(Collectors.toSet());
-        embeddingStoreService.removeOtherIDes(schema, idsSet);
     }
 
 
     // returns <newHashMap, List<removedIDes>
     //@Timed(value = "llmka.newsdatacheck.compressMetaHash.time", description = "time to compress metaHash", percentiles = {0.5, 0.9})
     // TODO: Add metric manually - annotations are not working on private method invokations
+    // method is tested using reflections (method name)
     private Pair<ConcurrentMap<BigInteger, Pair<Integer, String>>, List<String>> compressMetaHash(int reduceToSize) {
         logger.info("Compressing metaHash. Current size: {}", metaHash.size());
         Map<BigInteger, Pair<Integer, String>> newMetaMap = new ConcurrentHashMap();
@@ -151,5 +123,13 @@ public class NewsDataCheck implements INewsDataCheck {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public Set<String> fetchIDList() {
+        Set<String> idsSet = metaHash.entrySet().stream()
+                .map(entry -> entry.getValue().getRight())
+                .collect(Collectors.toSet());
+        return idsSet;
     }
 }

@@ -7,6 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.util.Assert;
 import org.springframework.web.client.RestTemplate;
@@ -36,42 +40,30 @@ public class RssRetriverTest {
 
 
     @Test
-    public void testRss() {
+    public void testRss() throws IOException {
         String rssUrl = "https://someurl/rss/news.xml";
-
-        Resource resource = resourceLoader.getResource("classpath:rusnews.rss");
-        String content;
-        try {
-            content = new String(Files.readAllBytes(Paths.get(resource.getURI())));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        when(restTemplate.getForObject(rssUrl, byte[].class)).thenReturn(content.getBytes(StandardCharsets.UTF_8));
+        String content = fetchTestResourceAsString("classpath:test-data/rusnews.rss");
+        HttpEntity httpEntity = fetchHttpEntity();
+        when(restTemplate.exchange(rssUrl, HttpMethod.GET, httpEntity, byte[].class)).thenReturn(ResponseEntity.ok(content.getBytes(StandardCharsets.UTF_8)));
 
         Optional<Stream<NewsData>> result = rssRetriever.retrieveData(new RssNewsSource("DatasourceID", "RssRetriver", rssUrl, "GroupName"));
         List<NewsData> resultList = result.orElseThrow().toList();
-        verify(restTemplate, times(1)).getForObject(rssUrl, byte[].class);
+        verify(restTemplate, times(1)).exchange(rssUrl, HttpMethod.GET, httpEntity, byte[].class);
         verifyNoMoreInteractions(restTemplate);
         Assert.isTrue(resultList.size() == 15, "Error parsing paragon RSS data");
     }
 
 
     @Test
-    public void testRss1() {
+    public void testRss1() throws IOException {
         String rssUrl = "https://someurl/rss/news.xml";
-
-        Resource resource = resourceLoader.getResource("classpath:israelinfo.rss");
-        String content;
-        try {
-            content = new String(Files.readAllBytes(Paths.get(resource.getURI())));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        when(restTemplate.getForObject(rssUrl, byte[].class)).thenReturn(content.getBytes(StandardCharsets.UTF_8));
+        String content = fetchTestResourceAsString("classpath:test-data/israelinfo.rss");
+        HttpEntity httpEntity = fetchHttpEntity();
+        when(restTemplate.exchange(rssUrl, HttpMethod.GET, httpEntity, byte[].class)).thenReturn(ResponseEntity.ok(content.getBytes(StandardCharsets.UTF_8)));
 
         Optional<Stream<NewsData>> result = rssRetriever.retrieveData(new RssNewsSource("DatasourceID", "RssRetriver", rssUrl, "GroupName"));
         List<NewsData> resultList = result.orElseThrow().toList();
-        verify(restTemplate, times(1)).getForObject(rssUrl, byte[].class);
+        verify(restTemplate, times(1)).exchange(rssUrl, HttpMethod.GET, httpEntity, byte[].class);
         verifyNoMoreInteractions(restTemplate);
         Assert.isTrue(resultList.size() == 100, "Error parsing paragon RSS data");
         resultList.forEach(res -> {
@@ -82,17 +74,10 @@ public class RssRetriverTest {
 
 
     @Test
-    public void testRssEncoding() {
+    public void testRssEncoding() throws IOException {
         String rssUrl = "https://someurl/rss/utf8news.xml";
-
-        Resource resource = resourceLoader.getResource("classpath:rusUTF.rss");
-        String content;
-        try {
-            content = new String(Files.readAllBytes(Paths.get(resource.getURI())));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        when(restTemplate.getForObject(rssUrl, byte[].class)).thenReturn(content.getBytes(StandardCharsets.UTF_8));
+        String content = fetchTestResourceAsString("classpath:test-data/rusUTF.rss");
+        when(restTemplate.exchange(rssUrl, HttpMethod.GET, fetchHttpEntity(), byte[].class)).thenReturn(ResponseEntity.ok(content.getBytes(StandardCharsets.UTF_8)));
 
         Optional<Stream<NewsData>> result = rssRetriever.retrieveData(new RssNewsSource("DatasourceID", "RssRetriver", rssUrl, "GroupName"));
         List<NewsData> resultList = result.orElseThrow().toList();
@@ -105,18 +90,12 @@ public class RssRetriverTest {
         });
     }
 
-    @Test
-    public void testRssFullText() {
-        String rssUrl = "https://someurl/rss/utf8news.xml";
 
-        Resource resource = resourceLoader.getResource("classpath:fulltext.rss");
-        String content;
-        try {
-            content = new String(Files.readAllBytes(Paths.get(resource.getURI())));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        when(restTemplate.getForObject(rssUrl, byte[].class)).thenReturn(content.getBytes(StandardCharsets.UTF_8));
+    @Test
+    public void testRssFullText() throws IOException {
+        String rssUrl = "https://someurl/rss/utf8news.xml";
+        String content = fetchTestResourceAsString("classpath:test-data/fulltext.rss");
+        when(restTemplate.exchange(rssUrl, HttpMethod.GET, fetchHttpEntity(), byte[].class)).thenReturn(ResponseEntity.ok(content.getBytes(StandardCharsets.UTF_8)));
 
         Optional<Stream<NewsData>> result = rssRetriever.retrieveData(new RssNewsSource("DatasourceID", "RssRetriver", rssUrl, "GroupName"));
         List<NewsData> resultList = result.orElseThrow().toList();
@@ -138,10 +117,49 @@ public class RssRetriverTest {
         Assert.isTrue(!checkForTags(textNoTags), "False tags detection on text with no tags");
     }
 
+
+    @Test
+    public void testRss404() throws IOException {
+        String rssUrl = "https://someurl/rss/utf8news.xml";
+        when(restTemplate.exchange(rssUrl, HttpMethod.GET, fetchHttpEntity(), byte[].class)).thenReturn(ResponseEntity.notFound().build());
+
+        Optional<Stream<NewsData>> result = rssRetriever.retrieveData(new RssNewsSource("DatasourceID", "RssRetriver", rssUrl, "GroupName"));
+
+        Assert.isTrue(result != null, "Wrong return - should be empty optional (instead of null)");
+        Assert.isTrue(result.isEmpty(), "Wrong return - should be empty optional");
+    }
+
+
+    @Test
+    public void testRssNoGuid() throws IOException {
+        String rssUrl = "https://someurl/rss/utf8news.xml";
+        String content = fetchTestResourceAsString("classpath:test-data/rss-xml/noguid.rss");
+        when(restTemplate.exchange(rssUrl, HttpMethod.GET, fetchHttpEntity(), byte[].class)).thenReturn(ResponseEntity.ok(content.getBytes(StandardCharsets.UTF_8)));
+
+        Optional<Stream<NewsData>> result = rssRetriever.retrieveData(new RssNewsSource("DatasourceID", "RssRetriver", rssUrl, "GroupName"));
+        List<NewsData> resultList = result.orElseThrow().toList();
+
+        Assert.isTrue(resultList.size() == 1, "Error parsing paragon RSS data");
+        Assert.isTrue(!resultList.get(0).getId().isEmpty(), "Empty GUID leads to empty NewsData.id");
+    }
+
+
+    private HttpEntity fetchHttpEntity() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Accept", "application/rss+xml");
+        headers.add("User-Agent", "Postman");
+        return new HttpEntity<>(headers);
+    }
+
     private boolean checkForTags(String src) {
         String regex = "<(\"[^\"]*\"|'[^']*'|[^'\">])*>";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(src);
         return matcher.find();
+    }
+
+    private String fetchTestResourceAsString(String resourcePath) throws IOException {
+        Resource resource = resourceLoader.getResource(resourcePath);
+        return new String(Files.readAllBytes(Paths.get(resource.getURI())), StandardCharsets.UTF_8);
     }
 }

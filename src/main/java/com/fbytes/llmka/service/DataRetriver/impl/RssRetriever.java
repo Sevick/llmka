@@ -6,6 +6,10 @@ import com.fbytes.llmka.model.newssource.RssNewsSource;
 import com.fbytes.llmka.service.DataRetriver.DataRetriever;
 import org.jsoup.Jsoup;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.w3c.dom.Document;
@@ -20,7 +24,10 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -33,12 +40,22 @@ public class RssRetriever extends DataRetriever<RssNewsSource> {
     @Autowired
     private RestTemplate restTemplate;
 
+    private final HttpEntity<String> httpEntity;
+
+    public RssRetriever() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Accept", "application/rss+xml");
+        headers.add("User-Agent", "Postman");
+        this.httpEntity = new HttpEntity<>(headers);
+    }
+
     @Override
     public Optional<Stream<NewsData>> retrieveData(RssNewsSource dataSource) {
         try {
-            byte[] feedStr = restTemplate.getForObject(dataSource.getUrl(), byte[].class);
-            if (feedStr == null)
+            ResponseEntity<byte[]> responseEntity = restTemplate.exchange(dataSource.getUrl(), HttpMethod.GET, httpEntity, byte[].class);
+            if (!responseEntity.getStatusCode().is2xxSuccessful() || responseEntity.getBody() == null || responseEntity.getBody().length == 0)
                 return Optional.empty();
+            byte[] feedStr = responseEntity.getBody();
             NewsData[] result = parseRSS(new ByteArrayInputStream(feedStr), dataSource);
             logger.debug("Read {} bytes, entries processed: {}", feedStr.length, result.length);
             return Optional.of(Arrays.stream((NewsData[]) result));
@@ -61,6 +78,8 @@ public class RssRetriever extends DataRetriever<RssNewsSource> {
             Node itemNode = itemList.item(i);
             if (itemNode.getNodeType() == Node.ELEMENT_NODE) {
                 Element itemElement = (Element) itemNode;
+                Optional<String> guid = Optional.ofNullable(itemElement.getElementsByTagName("guid").item(0))
+                        .map(item -> item.getTextContent().toString());
                 String title = itemElement.getElementsByTagName("title").item(0).getTextContent().toString()
                         .transform(txt -> checkAddLastDot(txt));
                 String link = itemElement.getElementsByTagName("link").item(0).getTextContent().toString();
@@ -73,10 +92,11 @@ public class RssRetriever extends DataRetriever<RssNewsSource> {
                 }
                 title = title.transform(txt -> checkAddLastDot(txt));
                 description = description.map(txt -> checkAddLastDot(txt));
+                String extId = guid.orElse(link);
 
                 result.add(
                         NewsData.builder()
-                                .id(UUID.randomUUID().toString())
+                                .id(extId)
                                 .dataSourceID(dataSource.getId())
                                 .dataSourceName(dataSource.getName())
                                 .link(link)

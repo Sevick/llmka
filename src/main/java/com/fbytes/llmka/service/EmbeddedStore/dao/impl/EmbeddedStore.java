@@ -1,7 +1,8 @@
-package com.fbytes.llmka.service.EmbeddingStore.impl;
+package com.fbytes.llmka.service.EmbeddedStore.dao.impl;
 
 import com.fbytes.llmka.logger.Logger;
-import com.fbytes.llmka.service.EmbeddingStore.IEmbeddedStore;
+import com.fbytes.llmka.service.EmbeddedStore.dao.IEmbeddedStore;
+import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.rag.content.Content;
@@ -13,9 +14,9 @@ import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Repository;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -41,7 +42,7 @@ public class EmbeddedStore implements IEmbeddedStore {
     @Value("${llmka.datastore.store_extension}")
     private String storeExtension;
 
-    @Autowired
+    @Autowired(required = false)
     private MeterRegistry meterRegistry;
 
     private final static ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
@@ -59,11 +60,12 @@ public class EmbeddedStore implements IEmbeddedStore {
 
     @PostConstruct
     private void init() {
-        storeSizeGauge = Gauge.builder("llmka.embeddedstore.store_size", embeddingStore, store -> retrieveStoreSize())
-                .tag("name", storeName)
-                .description("Size of in-memory store")
-                .register(meterRegistry);
-
+        if (meterRegistry != null) {
+            storeSizeGauge = Gauge.builder("llmka.embeddedstore.store_size", embeddingStore, store -> retrieveStoreSize())
+                    .tag("name", storeName)
+                    .description("Size of in-memory store")
+                    .register(meterRegistry);
+        }
         lastStoreSave = Instant.now();
         storeFilePath = storePath + storeName + storeExtension;
         try {
@@ -73,7 +75,6 @@ public class EmbeddedStore implements IEmbeddedStore {
         }
     }
 
-
     @Override
     @Timed(value = "llmka.embeddedstore.store_time", description = "time to check news for duplicates")
     public void store(List<TextSegment> segments, List<Embedding> embeddings) {
@@ -82,7 +83,7 @@ public class EmbeddedStore implements IEmbeddedStore {
             embeddingStore.addAll(embeddings, segments);
             if (Duration.between(lastStoreSave, Instant.now()).compareTo(saveInterval) > 0) {
                 lastStoreSave = Instant.now();
-                save(storeFilePath);
+                save();
             }
         } finally {
             readWriteLock.writeLock().unlock();
@@ -95,8 +96,8 @@ public class EmbeddedStore implements IEmbeddedStore {
         try {
             readWriteLock.writeLock().lock();
             embeddingStore.removeAll(idList);
-            save(storeFilePath);
-            logger.debug("Removed {} entries from keystore: {}", idList.size(), idList);
+            save();
+            logger.debug("Removed {} entries from keystore: [{}]", idList.size(), idList);
         } finally {
             readWriteLock.writeLock().unlock();
         }
@@ -105,9 +106,9 @@ public class EmbeddedStore implements IEmbeddedStore {
 
     @Override
     public void removeOtherIDes(Collection<String> idList) {
-        embeddingStore.removeAll(el -> !idList.contains(el));
-        save(storeFilePath);
-        logger.debug("Store cleaned up. Entries left: {}", idList.size());
+        embeddingStore.removeAll(el -> !idList.contains(((Metadata) el).getString("id")));
+        save();
+        logger.debug("Store [{}] cleaned up. Entries left: {}", storeName, idList.size());
     }
 
 
@@ -162,6 +163,10 @@ public class EmbeddedStore implements IEmbeddedStore {
         }
     }
 
+    public void save() {
+        save(storeFilePath);
+    }
+
 
     private void save(String storeFilePath) {
         logger.info("Saving store to: {}", storeFilePath);
@@ -177,15 +182,14 @@ public class EmbeddedStore implements IEmbeddedStore {
         try {
             InMemoryEmbeddingStore newEmbeddingStore = InMemoryEmbeddingStore.fromFile(storeFilePath);
             embeddingStore = newEmbeddingStore;
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             logger.warn("Unable to restore from file: {}", storeFilePath);
         }
         logger.info("Store restored from: {}", storeFilePath);
     }
 
 
-    private Integer retrieveStoreSize(){
+    private Integer retrieveStoreSize() {
         try {
             Field storeEntriesField = embeddingStore.getClass().getDeclaredField("entries");
             storeEntriesField.setAccessible(true);

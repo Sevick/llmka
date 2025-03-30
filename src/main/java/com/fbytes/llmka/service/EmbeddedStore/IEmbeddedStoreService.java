@@ -1,4 +1,4 @@
-package com.fbytes.llmka.service.EmbeddingStore;
+package com.fbytes.llmka.service.EmbeddedStore;
 
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
@@ -17,4 +17,6 @@ public interface IEmbeddedStoreService {
 
     Optional<List<Content>> retrieve(String schema, Embedding embeddedQuery, int maxResult, double minScoreLimit);
     Optional<List<Content>> retrieve(String schema, List<Embedding> embeddings, int maxResult, double minScoreLimit);
+
+
 }

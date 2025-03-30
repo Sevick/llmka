@@ -1,13 +1,17 @@
-package com.fbytes.llmka.service.EmbeddingStore.impl;
+package com.fbytes.llmka.service.EmbeddedStore.impl;
 
 import com.fbytes.llmka.logger.Logger;
-import com.fbytes.llmka.service.EmbeddingStore.IEmbeddedStoreService;
+import com.fbytes.llmka.service.EmbeddedStore.IEmbeddedStoreService;
+import com.fbytes.llmka.service.EmbeddedStore.dao.IEmbeddedStore;
+import com.fbytes.llmka.service.EmbeddedStore.dao.impl.EmbeddedStore;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.rag.content.Content;
 import io.micrometer.core.annotation.Timed;
+import jakarta.annotation.PreDestroy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
@@ -23,13 +27,24 @@ public class EmbeddedStoreService implements IEmbeddedStoreService {
     @Autowired
     private ApplicationContext context;
 
-    private ConcurrentMap<String, EmbeddedStore> embeddedStoreMap = new ConcurrentHashMap<>();
+    private ConcurrentMap<String, IEmbeddedStore> embeddedStoreMap = new ConcurrentHashMap<>();
 
-    private EmbeddedStore schemaStore(String schema) {
+    @PreDestroy
+    private void onShutdown(){
+        embeddedStoreMap.entrySet().forEach(entry -> {
+            entry.getValue().save();
+        });
+    }
+
+
+    private IEmbeddedStore schemaStore(String schema) {
         return embeddedStoreMap.computeIfAbsent(schema, k -> {
             EmbeddedStore newStore = new EmbeddedStore(k);
             context.getAutowireCapableBeanFactory().autowireBean(newStore);
-            context.getAutowireCapableBeanFactory().initializeBean(newStore, "newStore-" + schema);
+            String beanName = "newStore-" + schema;
+            context.getAutowireCapableBeanFactory().initializeBean(newStore, beanName);
+            ConfigurableApplicationContext configurableContext = (ConfigurableApplicationContext) context;
+            configurableContext.getBeanFactory().registerSingleton(beanName, newStore);
             return newStore;
         });
     }

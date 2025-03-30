@@ -138,8 +138,10 @@ public class MainIntegrationFlow {
     public org.springframework.integration.dsl.IntegrationFlow newsDataCheckChannelRejectBind() {
         return org.springframework.integration.dsl.IntegrationFlow
                 .from("newsDataCheckChannelReject")
-                .handle(m -> logger.info("Reject Message:\n{}\nReason: {}\nExplain: {}", ((EmbeddedData) m.getPayload()).getNewsData(),
-                        m.getHeaders().get(rejectReasonHeader), m.getHeaders().get(rejectExplainHeader))
+                .handle(m -> logger.info("Reject Message:\n{}\nReason: {}{}", ((EmbeddedData) m.getPayload()).getNewsData(),
+                        m.getHeaders().get(rejectReasonHeader),
+                        m.getHeaders().get(rejectExplainHeader) == null ? "" : String.format("\nExplain: %s", m.getHeaders().get(rejectExplainHeader))
+                        )
                 )
                 .get();
         //.nullChannel();

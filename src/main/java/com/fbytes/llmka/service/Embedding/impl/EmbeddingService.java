@@ -24,6 +24,7 @@ import java.util.Map;
 
 @Service
 public class EmbeddingService implements IEmbeddingService {
+    private static final Logger logger = Logger.getLogger(EmbeddingService.class);
 
     @Value("${llmka.embedding.model_path}")
     private String pathToModel;
@@ -33,8 +34,6 @@ public class EmbeddingService implements IEmbeddingService {
     private Integer segmentLengthLimit;
     @Value("${llmka.embedding.segment_overlap:128}")
     private Integer segmentOverlap;
-
-    private static final Logger logger = Logger.getLogger(EmbeddingService.class);
 
     private PoolingMode poolingMode = PoolingMode.MEAN;
     private EmbeddingModel embeddingModel;

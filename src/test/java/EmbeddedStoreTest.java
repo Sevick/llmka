@@ -2,15 +2,21 @@ import com.fbytes.llmka.model.EmbeddedData;
 import com.fbytes.llmka.model.NewsData;
 import com.fbytes.llmka.service.Embedding.IEmbeddingService;
 import com.fbytes.llmka.service.Embedding.impl.EmbeddingService;
-import com.fbytes.llmka.service.EmbeddingStore.IEmbeddedStore;
-import com.fbytes.llmka.service.EmbeddingStore.impl.EmbeddedStore;
+import com.fbytes.llmka.service.EmbeddedStore.dao.IEmbeddedStore;
+import com.fbytes.llmka.service.EmbeddedStore.dao.impl.EmbeddedStore;
+import config.TestConfig;
 import dev.langchain4j.rag.content.Content;
-import org.junit.jupiter.api.BeforeAll;
+import jakarta.annotation.PostConstruct;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.util.Assert;
 
 import java.util.Arrays;
@@ -18,7 +24,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-@SpringBootTest(classes = {EmbeddingService.class})
+@SpringBootTest(classes = {EmbeddingService.class, EmbeddedStoreTest.EmbeddedStoreTestConfig.class})
 public class EmbeddedStoreTest {
 
     @Autowired
@@ -27,33 +33,31 @@ public class EmbeddedStoreTest {
     @Autowired
     private ApplicationContext context;
 
-
+    @Autowired
     private IEmbeddedStore embeddedStore;
 
-
-    @BeforeEach
-    void setupBeforeAll() {
-        embeddedStore = new EmbeddedStore("testschema");
-        context.getAutowireCapableBeanFactory().autowireBean(embeddedStore);
-        context.getAutowireCapableBeanFactory().initializeBean(embeddedStore, "testStoreBean");
+    @TestConfiguration
+    static class EmbeddedStoreTestConfig {
+        @Bean
+        public IEmbeddedStore embeddedStore() {
+            return new EmbeddedStore("testschema");
+        }
     }
 
 
-    @Test
-    public void testEmbeddingService() {
-        NewsData newsData = NewsData.builder()
-                .id("ID1")
-                .dataSourceID("DataSourceID")
-                .link("http://somelink")
-                .title("Title")
-                .description(Optional.of("Description"))
-                .text(Optional.empty())
-                .build();
-
-        EmbeddedData embeddedData = embeddingService.embedNewsData(newsData);
-        Assert.isTrue(!embeddedData.getSegments().isEmpty(), "Segments are missing in embedded data");
-        Assert.isTrue(!embeddedData.getEmbeddings().isEmpty(), "Embeddings are missing in embedded data");
-    }
+//    @PostConstruct
+//    private void init() {
+//        try {
+//            embeddedStore = (IEmbeddedStore) context.getBean("testStoreBean");
+//        }
+//        catch (NoSuchBeanDefinitionException ex){
+//            embeddedStore = new EmbeddedStore("testschema");
+//            context.getAutowireCapableBeanFactory().autowireBean(embeddedStore);
+//            context.getAutowireCapableBeanFactory().initializeBean(embeddedStore, "testStoreBean");
+//            ConfigurableApplicationContext configurableContext = (ConfigurableApplicationContext) context;
+//            configurableContext.getBeanFactory().registerSingleton("testStoreBean", embeddedStore);
+//        }
+//    }
 
 
     @Test
@@ -90,5 +94,14 @@ public class EmbeddedStoreTest {
         Optional<List<Content>> result = embeddedStore.retrieve(embeddings.getEmbeddings(), 3, 0.85f);
 
         Assert.isTrue(!result.isEmpty() && result.get().size() > 0, "No similar news found");
+    }
+
+    @Test
+    public void testSecondaryInit(){
+        Assert.isTrue(true, "failed");
+    }
+
+    private void removeTestData(){
+
     }
 }

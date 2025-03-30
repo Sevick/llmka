@@ -11,4 +11,5 @@ scrape_configs:
   - job_name: 'llmka'
     metrics_path: '/actuator/prometheus'
     static_configs:
-      - targets: ['host.docker.internal:8080']
+      - targets: ['llmka:8080']
+#      - targets: ['host.docker.internal:8080']

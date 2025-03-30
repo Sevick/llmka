@@ -19,7 +19,6 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 @EnableIntegration
 @EnableWebMvc
 @EnableConfigurationProperties(TelegramBotConfig.class)
-//@EnableIntegrationGraphController
 public class LLMka {
     public static void main(String[] args) {
         new SpringApplicationBuilder(LLMka.class)

@@ -1,6 +1,7 @@
 package com.fbytes.llmka.controller;
 
-import com.fbytes.llmka.service.NewsDataCheck.INewsDataCheck;
+import com.fbytes.llmka.service.Maintenance.IMaintenanceService;
+import com.fbytes.llmka.service.NewsCheck.INewsCheck;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Profile;
@@ -20,12 +21,12 @@ public class CommandService {
     @Autowired
     ApplicationContext applicationContext;
     @Autowired
-    INewsDataCheck newsDataCheck;
+    IMaintenanceService maintenanceService;
 
     @GetMapping("/compress")
     public ResponseEntity compressStore(@RequestParam(name = "schema", required = true) String schema) {
         try {
-            newsDataCheck.cleanupStore(schema);
+            maintenanceService.compressDB(schema);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(e.getMessage());
         }

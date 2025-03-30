@@ -7,8 +7,8 @@ import com.fbytes.llmka.service.DataRetriver.IDataRetriever;
 import com.fbytes.llmka.service.DataRetriver.impl.RssRetriever;
 import com.fbytes.llmka.service.Embedding.IEmbeddingService;
 import com.fbytes.llmka.service.Embedding.impl.EmbeddingService;
-import com.fbytes.llmka.service.EmbeddingStore.IEmbeddedStoreService;
-import com.fbytes.llmka.service.EmbeddingStore.impl.EmbeddedStoreService;
+import com.fbytes.llmka.service.EmbeddedStore.IEmbeddedStoreService;
+import com.fbytes.llmka.service.EmbeddedStore.impl.EmbeddedStoreService;
 import config.TestConfig;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.rag.content.Content;
@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+@Disabled
 @SpringBootTest(classes = {EmbeddingService.class, EmbeddedStoreService.class, RssRetriever.class, RestTemplate.class})
 @ContextConfiguration(classes = {TestConfig.class})
 public class FlowTest {
@@ -41,7 +42,6 @@ public class FlowTest {
     private String rssUrl = "https://detaly.co.il/feed/";
     private RssNewsSource rssDataSource = new RssNewsSource("DatasourceID", "RssRetriver", rssUrl, "GroupName");
 
-    @Disabled
     @Test
     public void flowTest() {
         Optional<Stream<NewsData>> dataStream = rssRetriever.retrieveData(rssDataSource);

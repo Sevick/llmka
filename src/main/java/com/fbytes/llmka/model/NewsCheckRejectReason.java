@@ -7,6 +7,10 @@ import lombok.Data;
 @AllArgsConstructor
 public class NewsCheckRejectReason {
     public enum REASON { META_DUPLICATION, CLOSE_MATCH };
-    REASON reason;
-    String explain;
+    private REASON reason;
+    private String explain;
+
+    public NewsCheckRejectReason(REASON reason) {
+        this.reason = reason;
+    }
 }
