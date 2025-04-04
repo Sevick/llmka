@@ -1,7 +1,7 @@
 import com.fbytes.llmka.model.NewsData;
 import com.fbytes.llmka.model.newssource.RssNewsSource;
 import com.fbytes.llmka.service.DataRetriver.IDataRetriever;
-import com.fbytes.llmka.service.DataRetriver.impl.RssRetriever;
+import com.fbytes.llmka.service.DataRetriver.impl.DataRetrieverRSS;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 
 import static org.mockito.Mockito.*;
 
-@SpringBootTest(classes = RssRetriever.class)
+@SpringBootTest(classes = DataRetrieverRSS.class)
 public class RssRetriverTest {
 
     @Autowired
@@ -144,11 +144,11 @@ public class RssRetriverTest {
     }
 
 
-    private HttpEntity fetchHttpEntity() {
+    private HttpEntity<String> fetchHttpEntity() {
         HttpHeaders headers = new HttpHeaders();
         headers.add("Accept", "application/rss+xml");
         headers.add("User-Agent", "Postman");
-        return new HttpEntity<>(headers);
+        return new HttpEntity<String>(headers);
     }
 
     private boolean checkForTags(String src) {

@@ -19,4 +19,5 @@ public interface IEmbeddedStore {
     Optional<List<Content>> retrieve(List<Embedding> embeddings, int maxResult, double minScoreLimit);
 
     void save();
+    void cleanStorage();
 }

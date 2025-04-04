@@ -47,11 +47,13 @@ public class NewsMetaCheck implements INewsCheck, INewsIDStore {
 
     private ConcurrentMap<BigInteger, Pair<Integer, String>> metaHash = new ConcurrentHashMap<>();   // <MD5, <seq#, id>>
 
+    private Gauge metaSizeGauge;
 
     @PostConstruct
     private void init() {
         if (meterRegistry != null) {
-            Gauge.builder("llmka.newsmetacheck.metahash.size", fetchMetaHashSize()).register(meterRegistry);
+            metaSizeGauge= Gauge.builder("llmka.newsmetacheck.metahash.size", fetchMetaHashSize())
+                    .register(meterRegistry);
         }
     }
 

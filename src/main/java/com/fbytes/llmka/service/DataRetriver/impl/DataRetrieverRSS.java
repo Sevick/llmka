@@ -33,16 +33,16 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 @Service
-public class RssRetriever extends DataRetriever<RssNewsSource> {
+public class DataRetrieverRSS extends DataRetriever<RssNewsSource> {
 
-    private static final Logger logger = Logger.getLogger(RssRetriever.class);
+    private static final Logger logger = Logger.getLogger(DataRetrieverRSS.class);
 
     @Autowired
     private RestTemplate restTemplate;
 
     private final HttpEntity<String> httpEntity;
 
-    public RssRetriever() {
+    public DataRetrieverRSS() {
         HttpHeaders headers = new HttpHeaders();
         headers.add("Accept", "application/rss+xml");
         headers.add("User-Agent", "Postman");

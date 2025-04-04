@@ -3,7 +3,7 @@ package real;
 import com.fbytes.llmka.model.NewsData;
 import com.fbytes.llmka.model.newssource.RssNewsSource;
 import com.fbytes.llmka.service.DataRetriver.IDataRetriever;
-import com.fbytes.llmka.service.DataRetriver.impl.RssRetriever;
+import com.fbytes.llmka.service.DataRetriver.impl.DataRetrieverRSS;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +17,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 @Disabled
-@SpringBootTest(classes = {RssRetriever.class, RestTemplate.class})
+@SpringBootTest(classes = {DataRetrieverRSS.class, RestTemplate.class})
 public class RssRetriverInegrationTest {
 
     @Autowired

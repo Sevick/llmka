@@ -42,3 +42,4 @@ build/
 secret.yaml
 runtime/
 tmp/
+deploy/

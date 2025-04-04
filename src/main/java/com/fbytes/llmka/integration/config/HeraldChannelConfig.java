@@ -6,7 +6,6 @@ import com.fbytes.llmka.model.EmbeddedData;
 import com.fbytes.llmka.model.Mapping;
 import com.fbytes.llmka.model.heraldchannel.Herald;
 import com.fbytes.llmka.model.heraldchannel.HeraldTelegram;
-import com.fbytes.llmka.model.heraldmessage.HeraldMessage;
 import com.fbytes.llmka.model.heraldmessage.TelegramMessage;
 import com.fbytes.llmka.service.Herald.IHeraldService;
 import com.fbytes.llmka.service.Herald.impl.HeraldServiceTelegram;
@@ -24,14 +23,11 @@ import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.integration.channel.PublishSubscribeChannel;
 import org.springframework.integration.channel.QueueChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
-import org.springframework.integration.dsl.Pollers;
 import org.springframework.integration.dsl.context.IntegrationFlowContext;
 import org.springframework.integration.handler.BridgeHandler;
 import org.springframework.integration.router.HeaderValueRouter;
 import org.springframework.integration.scheduling.PollerMetadata;
-import org.springframework.integration.support.management.micrometer.MicrometerMetricsCaptor;
 import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.PollableChannel;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -141,7 +137,7 @@ public class HeraldChannelConfig implements ApplicationListener<ContextRefreshed
                         .handle(message -> heraldNameService.getRight().sendMessage(new TelegramMessage((String) message.getPayload())),
                                 e -> e.poller(telegramPoller))
                         .get();
-                beanFactory.registerSingleton(heraldQName+"-Flow", heraldQFlow);
+                beanFactory.registerSingleton(heraldQName + "-Flow", heraldQFlow);
                 flowContext.registration(heraldQFlow).register();
             });
         });
@@ -170,13 +166,4 @@ public class HeraldChannelConfig implements ApplicationListener<ContextRefreshed
     private String heraldQueueName(String heraldBeanName) {
         return heraldBeanName + "-Q";
     }
-
-
-//    @Bean
-//    public IntegrationFlow bufferingWorkflow() {
-//        return IntegrationFlow.from("pubSubChannel")
-//                .delay("bufferingDelayer", d -> d.defaultDelay(1000)) // 1-second delay
-//                .channel("queueChannel")
-//                .get();
-//    }
 }

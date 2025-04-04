@@ -13,12 +13,14 @@ import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore;
 import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Metrics;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -30,6 +32,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class EmbeddedStore implements IEmbeddedStore {
@@ -54,14 +57,16 @@ public class EmbeddedStore implements IEmbeddedStore {
 
     private Gauge storeSizeGauge;
 
+
     public EmbeddedStore(String storeName) {
         this.storeName = storeName;
     }
 
     @PostConstruct
     private void init() {
+        logger.debug("Initializing store: {}", storeName);
         if (meterRegistry != null) {
-            storeSizeGauge = Gauge.builder("llmka.embeddedstore.store_size", embeddingStore, store -> retrieveStoreSize())
+            storeSizeGauge = Gauge.builder("llmka.embeddedstore.store_size", () -> retrieveStoreSize())
                     .tag("name", storeName)
                     .description("Size of in-memory store")
                     .register(meterRegistry);
@@ -74,6 +79,13 @@ public class EmbeddedStore implements IEmbeddedStore {
             logger.logException(e);
         }
     }
+
+    @PreDestroy
+    private void finilize(){
+        logger.debug("Finilizing store: {}", storeName);
+        Metrics.globalRegistry.remove(storeSizeGauge);
+    }
+
 
     @Override
     @Timed(value = "llmka.embeddedstore.store_time", description = "time to check news for duplicates")
@@ -135,12 +147,10 @@ public class EmbeddedStore implements IEmbeddedStore {
 
     @Override
     public Optional<List<Content>> retrieve(List<Embedding> embeddings, int maxResult, double minScoreLimit) {
-        for (int i = 0; i < embeddings.size(); i++) {
-            Optional<List<Content>> contentList = retrieve(embeddings.get(i), maxResult, minScoreLimit);
-            if (!contentList.isEmpty() && !contentList.get().isEmpty())
-                return contentList;
-        }
-        return Optional.empty();
+        return embeddings.stream()
+                .map(emb -> retrieve(emb, maxResult, minScoreLimit))
+                .filter(opt -> !opt.isEmpty())
+                .findFirst().orElse(Optional.empty());
     }
 
 
@@ -163,11 +173,6 @@ public class EmbeddedStore implements IEmbeddedStore {
         }
     }
 
-    public void save() {
-        save(storeFilePath);
-    }
-
-
     private void save(String storeFilePath) {
         logger.info("Saving store to: {}", storeFilePath);
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(storeFilePath))) {
@@ -177,6 +182,14 @@ public class EmbeddedStore implements IEmbeddedStore {
         }
     }
 
+    public void save() {
+        save(storeFilePath);
+    }
+
+    @Override
+    public void cleanStorage() {
+        (new File(storeFilePath)).delete();
+    }
 
     private void restore(String storeFilePath) {
         try {
@@ -194,7 +207,7 @@ public class EmbeddedStore implements IEmbeddedStore {
             Field storeEntriesField = embeddingStore.getClass().getDeclaredField("entries");
             storeEntriesField.setAccessible(true);
             List<?> fieldValue = (List<?>) storeEntriesField.get(embeddingStore);
-            storeEntriesField.setAccessible(false);
+            //storeEntriesField.setAccessible(false);
             if (fieldValue != null)
                 return fieldValue.size();
             else

@@ -1,22 +1,17 @@
 import com.fbytes.llmka.model.EmbeddedData;
 import com.fbytes.llmka.model.NewsData;
-import com.fbytes.llmka.service.Embedding.IEmbeddingService;
-import com.fbytes.llmka.service.Embedding.impl.EmbeddingService;
 import com.fbytes.llmka.service.EmbeddedStore.dao.IEmbeddedStore;
 import com.fbytes.llmka.service.EmbeddedStore.dao.impl.EmbeddedStore;
-import config.TestConfig;
+import com.fbytes.llmka.service.Embedding.IEmbeddingService;
+import com.fbytes.llmka.service.Embedding.impl.EmbeddingService;
 import dev.langchain4j.rag.content.Content;
-import jakarta.annotation.PostConstruct;
-import org.junit.jupiter.api.BeforeEach;
+import jakarta.annotation.PreDestroy;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.util.Assert;
 
 import java.util.Arrays;
@@ -43,22 +38,6 @@ public class EmbeddedStoreTest {
             return new EmbeddedStore("testschema");
         }
     }
-
-
-//    @PostConstruct
-//    private void init() {
-//        try {
-//            embeddedStore = (IEmbeddedStore) context.getBean("testStoreBean");
-//        }
-//        catch (NoSuchBeanDefinitionException ex){
-//            embeddedStore = new EmbeddedStore("testschema");
-//            context.getAutowireCapableBeanFactory().autowireBean(embeddedStore);
-//            context.getAutowireCapableBeanFactory().initializeBean(embeddedStore, "testStoreBean");
-//            ConfigurableApplicationContext configurableContext = (ConfigurableApplicationContext) context;
-//            configurableContext.getBeanFactory().registerSingleton("testStoreBean", embeddedStore);
-//        }
-//    }
-
 
     @Test
     public void similarityTest() {
@@ -96,12 +75,9 @@ public class EmbeddedStoreTest {
         Assert.isTrue(!result.isEmpty() && result.get().size() > 0, "No similar news found");
     }
 
-    @Test
-    public void testSecondaryInit(){
-        Assert.isTrue(true, "failed");
-    }
 
-    private void removeTestData(){
-
+    @PreDestroy
+    private void removeTestData() {
+        embeddedStore.cleanStorage();
     }
 }

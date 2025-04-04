@@ -23,10 +23,11 @@ management:
       show-components: always
 
 logging:
-  config: classpath:log4j2.xml
+  config: log4j2.xml
   level:
     root: INFO
     org.springframework: INFO
+    org.springframework.context: DEBUG
     org.springframework.integration: INFO
     org.springframework.messaging: INFO
     com.fbytes.LLMka: DEBUG
@@ -45,8 +46,8 @@ llmka:
     store_extension: ".json"
     store_path: ${secret.datastore.store_path}
   datacheck:
-    metahash_size_limit: 512
-    metahash_size_core: 384
+    metahash_size_limit: 4096
+    metahash_size_core: 3184
     score_limit: 0.87
     reject:
       reject_reason_header: "RejectReason"

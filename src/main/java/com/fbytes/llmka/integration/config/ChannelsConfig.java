@@ -21,7 +21,8 @@ public class ChannelsConfig {
     }
 
     @Bean
-    public MessageChannel newDataChannelOut() {
+    @Qualifier("newsDataChannelOut")
+    public MessageChannel newsDataChannelOut() {
         DirectChannel channel = new DirectChannel();
         channel.setDatatypes(NewsData.class);
         return channel;
