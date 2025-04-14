@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class EmbeddedStore implements IEmbeddedStore {
@@ -53,13 +52,15 @@ public class EmbeddedStore implements IEmbeddedStore {
     private Instant lastStoreSave;
 
     private final String storeName;
+    private final boolean loadDataOnInit;
     private String storeFilePath;
 
     private Gauge storeSizeGauge;
 
 
-    public EmbeddedStore(String storeName) {
+    public EmbeddedStore(String storeName, boolean loadDataOnInit) {
         this.storeName = storeName;
+        this.loadDataOnInit = loadDataOnInit;
     }
 
     @PostConstruct
@@ -73,15 +74,17 @@ public class EmbeddedStore implements IEmbeddedStore {
         }
         lastStoreSave = Instant.now();
         storeFilePath = storePath + storeName + storeExtension;
-        try {
-            restore(storeFilePath);
-        } catch (Exception e) {
-            logger.logException(e);
+        if (loadDataOnInit) {
+            try {
+                restore(storeFilePath);
+            } catch (Exception e) {
+                logger.logException(e);
+            }
         }
     }
 
     @PreDestroy
-    private void finilize(){
+    private void finilize() {
         logger.debug("Finilizing store: {}", storeName);
         Metrics.globalRegistry.remove(storeSizeGauge);
     }

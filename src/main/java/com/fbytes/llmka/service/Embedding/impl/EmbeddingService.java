@@ -40,23 +40,25 @@ public class EmbeddingService implements IEmbeddingService {
 
 
     @PostConstruct
-    private void init(){
+    private void init() {
         embeddingModel = new OnnxEmbeddingModel(pathToModel, pathToTokenizer, poolingMode);
         //embeddingModel = new AllMiniLmL6V2EmbeddingModel();
     }
 
 
-
     @Override
-    @Timed(value="llmka.embedding.time",description="time to embed NewsData",percentiles={0.5,0.9})
+    @Timed(value = "llmka.embedding.time", description = "time to embed NewsData", percentiles = {0.5, 0.9})
     public EmbeddedData embedNewsData(NewsData newsData) {
         Map<String, String> metadataMap = new HashMap<>();
         metadataMap.put("id", newsData.getId());
         metadataMap.put("link", newsData.getLink());
         Metadata metadata = Metadata.from(metadataMap);
-        Document document = Document.from(newsData.getTitle() + "." + newsData.getDescription().orElse(""), metadata);
+        Document document = Document.from(newsData.getTitle() + newsData.getDescription().orElse(""), metadata);
         DocumentSplitter splitter = DocumentSplitters.recursive(segmentLengthLimit, segmentOverlap);
         List<TextSegment> segments = splitter.split(document);
+        if (segments.size() > 1) {
+            logger.warn("Multi-segment texts are not fully supported");
+        }
         List<Embedding> embeddings = embeddingModel.embedAll(segments).content();
         return new EmbeddedData(newsData, segments, embeddings);
     }

@@ -1,20 +1,19 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:blogChannel="http://backend.userland.com/blogChannelModule">
-  <channel>
-    <title>Channel title</title>
-    <link>https://www.test</link>
-    <description>Channel description</description>
-
-<item>
-<id>123123aaabbb</id>
-<title>Some title text</title>
-<description/>
-<author/>
-<image/>
-<link>https://test/rss</link>
-<pubDate>Wed, 05 Mar 2025 18:47:20 +03:00</pubDate>
-<full-text>Here is some full text</full-text>
-<genre>message</genre>
-</item>
-
-</channel>
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:blogChannel="http://backend.userland.com/blogChannelModule">
+	<channel>
+		<title>Channel title</title>
+		<link>https://www.test</link>
+		<description>Channel description</description>
+		<item>
+			<id>123123aaabbb</id>
+			<title>Some title text</title>
+			<description/>
+			<author/>
+			<image/>
+			<link>https://test/rss</link>
+			<pubDate>Wed, 05 Mar 2025 18:47:20 +03:00</pubDate>
+			<full-text>Here is some full text</full-text>
+			<genre>message</genre>
+		</item>
+	</channel>
 </rss>

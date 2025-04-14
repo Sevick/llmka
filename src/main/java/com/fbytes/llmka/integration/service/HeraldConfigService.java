@@ -1,6 +1,6 @@
 package com.fbytes.llmka.integration.service;
 
-import com.fbytes.llmka.model.heraldchannel.Herald;
+import com.fbytes.llmka.model.config.heraldchannel.Herald;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;

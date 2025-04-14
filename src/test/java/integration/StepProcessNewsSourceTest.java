@@ -4,13 +4,14 @@ import com.fbytes.llmka.integration.config.ChannelsConfig;
 import com.fbytes.llmka.integration.steps.StepProcessNewsSource;
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.NewsData;
-import com.fbytes.llmka.model.newssource.NewsSource;
-import com.fbytes.llmka.service.DataRetriver.DataRetrieveService;
+import com.fbytes.llmka.model.config.newssource.NewsSource;
+import com.fbytes.llmka.service.DataRetrieverService.impl.DataRetrieveService;
 import com.fbytes.llmka.service.DataRetriver.DataRetriever;
 import com.fbytes.llmka.service.DataRetriver.IDataRetriever;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -24,6 +25,7 @@ import org.springframework.messaging.MessagingException;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.Assert;
 
+import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -31,8 +33,11 @@ import java.util.stream.Stream;
 
 @SpringBootTest //(classes = {embeddingService.class})
 @ContextConfiguration(classes = {StepProcessNewsSource.class, ChannelsConfig.class, DataRetrieveService.class, StepProcessNewsSourceTest.TestConfig.class})
-public class StepProcessNewsSourceTest {
+class StepProcessNewsSourceTest {
     private static final Logger logger = Logger.getLogger(StepProcessNewsSourceTest.class);
+
+    @Value("${llmka.herald.news_group_header}")
+    private String newsGroupHeader;
 
     @Autowired
     @Qualifier("newsSourceChannel")
@@ -42,7 +47,7 @@ public class StepProcessNewsSourceTest {
     @Qualifier("newsDataChannelOut")
     private DirectChannel newsDataChannelOut;
 
-    final static NewsData[] resultData = new NewsData[] {
+    private static final NewsData[] resultData = new NewsData[] {
             NewsData.builder()
                     .id("ID1")
                     .dataSourceID("DataSourceID")
@@ -78,16 +83,20 @@ public class StepProcessNewsSourceTest {
 
 
     @Test
-    public void testFlow() {
-        NewsSource tstNewsSource = new TstNewsSource("tst-id1", "tst-newsSourceName", "tst-newsSourceGroup");
+    void testFlow() {
+        String testNewsSourceGroupStr = "tst-newsSourceGroup";
+        NewsSource tstNewsSource = new TstNewsSource("tst-id1", "tst-newsSourceName", testNewsSourceGroupStr);
         TestMessageHandler testMessageHandler = new TestMessageHandler();
         newsDataChannelOut.subscribe(testMessageHandler);
         Message<NewsSource> message = MessageBuilder.withPayload(tstNewsSource).build();
 
         newsSourceChannel.send(message);
         int outMessagesCount = testMessageHandler.getConcurrentLinkedQueue().size();
-        Assert.isTrue(outMessagesCount == resultData.length, String.format("Number of messages reached output channel: {0}, Expected: {1}", outMessagesCount, resultData.length));
-        //Message<?> result = newsDataChannelOut..receive(1000);
+        Assert.isTrue(outMessagesCount == resultData.length, MessageFormat.format("Number of messages reached output channel: {0}, Expected: {1}", outMessagesCount, resultData.length));
+        Assert.isTrue(testMessageHandler.getConcurrentLinkedQueue().stream()
+                        .allMatch(msg -> msg.getPayload() instanceof NewsData), "All payload should be of type NewsData");
+        Assert.isTrue(testMessageHandler.getConcurrentLinkedQueue().stream()
+                .allMatch(msg -> msg.getHeaders().get(newsGroupHeader).equals(testNewsSourceGroupStr)), MessageFormat.format("Grouping header should be add to all output items: {0}", newsGroupHeader));
     }
 
 

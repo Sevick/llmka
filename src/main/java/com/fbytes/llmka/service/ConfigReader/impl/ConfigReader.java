@@ -1,9 +1,8 @@
 package com.fbytes.llmka.service.ConfigReader.impl;
 
 import com.fbytes.llmka.logger.Logger;
-import com.fbytes.llmka.model.IConfigFactory;
+import com.fbytes.llmka.model.config.IConfigFactory;
 import com.fbytes.llmka.service.ConfigReader.IConfigReader;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -17,7 +16,7 @@ import java.util.function.Consumer;
 public class ConfigReader<T> implements IConfigReader<T> {
     private static final Logger logger = Logger.getLogger(ConfigReader.class);
 
-    protected final Boolean ignoreInvalidConfig;
+    protected final boolean ignoreInvalidConfig;
 
     public ConfigReader(Boolean ignoreInvalidConfig) {
         this.ignoreInvalidConfig = ignoreInvalidConfig;

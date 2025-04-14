@@ -1,8 +1,8 @@
 package com.fbytes.llmka.integration.steps;
 
 import com.fbytes.llmka.logger.Logger;
-import com.fbytes.llmka.model.newssource.NewsSource;
-import com.fbytes.llmka.model.newssource.NewsSourceFactory;
+import com.fbytes.llmka.model.config.newssource.NewsSource;
+import com.fbytes.llmka.model.config.newssource.NewsSourceFactory;
 import com.fbytes.llmka.service.ConfigReader.impl.ConfigReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;

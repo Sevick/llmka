@@ -2,7 +2,7 @@ package com.fbytes.llmka.service.Herald.impl;
 
 import com.fbytes.llmka.config.TelegramBotConfig;
 import com.fbytes.llmka.logger.Logger;
-import com.fbytes.llmka.model.heraldchannel.HeraldTelegram;
+import com.fbytes.llmka.model.config.heraldchannel.HeraldTelegram;
 import com.fbytes.llmka.model.heraldmessage.TelegramMessage;
 import com.fbytes.llmka.service.Herald.IHeraldService;
 import jakarta.annotation.PostConstruct;
@@ -23,17 +23,16 @@ public class HeraldServiceTelegram implements IHeraldService<TelegramMessage> {
     @Autowired
     TelegramBotConfig telegramBotConfigService;
 
-    private String botUsername;
+    private final String name;
+    private final String botUsername;
     private String botToken;
     private String tgChannel;
     private TelegramLongPollingBot telegramLongPollingBot;
 
-    public HeraldServiceTelegram(String botUsername) {
-        this.botUsername = botUsername;
-    }
 
     public HeraldServiceTelegram(HeraldTelegram heraldChannelTelegram) {
         this.botUsername = heraldChannelTelegram.getBot();
+        this.name = heraldChannelTelegram.getName();
     }
 
 
@@ -60,9 +59,10 @@ public class HeraldServiceTelegram implements IHeraldService<TelegramMessage> {
 
         try {
             TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
-            botsApi.registerBot(telegramLongPollingBot);
+            var session = botsApi.registerBot(telegramLongPollingBot);
+            session.stop();
         } catch (TelegramApiException e) {
-            logger.logException(e);
+            logger.logException("Failed to register bot", e);
             throw new RuntimeException(e);
         }
     }
@@ -78,9 +78,9 @@ public class HeraldServiceTelegram implements IHeraldService<TelegramMessage> {
         message.setParseMode("Markdown");
         try {
             telegramLongPollingBot.execute(message);
-            logger.info("Message sent successfully!");
+            logger.info("Message sent successfully to {}!", name);
         } catch (TelegramApiException e) {
-            logger.logException(e);
+            logger.logException("Failed to send message to " + name, e);
         }
     }
 }

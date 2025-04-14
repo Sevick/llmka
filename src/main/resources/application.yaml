@@ -17,10 +17,28 @@ spring:
 
 management:
   endpoints:
-    web.exposure.include: "*"
+    web.exposure.include: "*"  # health, metrics, traces, prometheus
     health:
       show-details: always
       show-components: always
+  metrics:
+    export:
+      prometheus:
+        exemplars:
+          enabled: true
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0 # Sample 100% of requests
+  zipkin:
+    enabled: true
+    tracing:
+      endpoint: ${secret.tracing.zipkin.endpoint}
+  prometheus:
+    export:
+      enabled: true
+      histogram: true
+
 
 logging:
   config: log4j2.xml
@@ -33,6 +51,8 @@ logging:
     com.fbytes.LLMka: DEBUG
 
 llmka:
+  newssource:
+    config_folder: ${secret.datasource.config_folder}
   config:
     ignore_invalid_config: true
     mappings_file: "${secret.config.mappings_file}"
@@ -42,18 +62,40 @@ llmka:
     segment_length_limit: 512
     segment_overlap: 128
   datastore:
-    save_interval: PT5M
+    save_interval: PT5m
     store_extension: ".json"
     store_path: ${secret.datastore.store_path}
-  datacheck:
-    metahash_size_limit: 4096
-    metahash_size_core: 3184
-    score_limit: 0.87
+  llm_provider:
+    phi4_onprem:
+      model_name: ${secret.llm_provider.phi4_onprem.model_name}
+      base_url: ${secret.llm_provider.phi4_onprem.base_url}
+      timeout: PT2m
+    ollama_onprem:
+      model_name: ${secret.llm_provider.ollama_onprem.model_name}
+      base_url: ${secret.llm_provider.ollama_onprem.base_url}
+      timeout: PT2m
+  brief:
+    llm_provider: "LocalOllama"
+    description_size_limit: 200
+    timeout: PT2m
+    prompt:
+      system: ${secret.brief.prompt.system}
+      user: ${secret.brief.prompt.user}
+  newscheck:
     reject:
       reject_reason_header: "RejectReason"
       reject_explain_header: "RejectExplain"
-  newssource:
-    config_folder: ${secret.datasource.config_folder}
+    metacheck:
+      metahash_size_limit: 2048
+      metahash_size_core: 1024
+    datacheck:
+      score_limit: 0.87
+    adcheck:
+      llm_provider: "LocalOllama"
+      timeout: PT2m
+      prompt:
+        system: ${secret.adcheck.prompt.system}
+        user: ${secret.adcheck.prompt.user}
   herald:
     news_group_header: "newsGroupHeader"
     config_file: ${secret.telegram.config_file}
@@ -68,3 +110,6 @@ llmka:
           aigestbot:
             tgChannel: "${secret.telegram.bot.aigestbot.tgChannel}"
             token: "${secret.telegram.bot.aigestbot.token}"
+          israeldigestengbot:
+            tgChannel: "${secret.telegram.bot.israeldigestengbot.tgChannel}"
+            token: "${secret.telegram.bot.israeldigestengbot.token}"

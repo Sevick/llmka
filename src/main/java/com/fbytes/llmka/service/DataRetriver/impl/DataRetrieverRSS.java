@@ -2,8 +2,10 @@ package com.fbytes.llmka.service.DataRetriver.impl;
 
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.NewsData;
-import com.fbytes.llmka.model.newssource.RssNewsSource;
+import com.fbytes.llmka.model.config.newssource.RssNewsSource;
 import com.fbytes.llmka.service.DataRetriver.DataRetriever;
+import io.micrometer.core.annotation.Timed;
+import io.micrometer.tracing.annotation.NewSpan;
 import org.jsoup.Jsoup;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
@@ -24,10 +26,11 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.sql.Timestamp;
+import java.text.MessageFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -50,6 +53,8 @@ public class DataRetrieverRSS extends DataRetriever<RssNewsSource> {
     }
 
     @Override
+    @Timed(value = "llmka.dataretrive.rss.time", description = "time retrieve RSS data")
+    @NewSpan(name = "dataretriverss-span")
     public Optional<Stream<NewsData>> retrieveData(RssNewsSource dataSource) {
         try {
             ResponseEntity<byte[]> responseEntity = restTemplate.exchange(dataSource.getUrl(), HttpMethod.GET, httpEntity, byte[].class);
@@ -60,12 +65,13 @@ public class DataRetrieverRSS extends DataRetriever<RssNewsSource> {
             logger.debug("Read {} bytes, entries processed: {}", feedStr.length, result.length);
             return Optional.of(Arrays.stream((NewsData[]) result));
         } catch (Exception e) {
-            logger.error("DataSource: {}, exception: {}", dataSource.getName(), e.getMessage());
+            logger.logException(MessageFormat.format("DataSource: {0}", dataSource.getName()), e);
             return Optional.empty();
         }
     }
 
 
+    @NewSpan(name = "parserss-span")
     private NewsData[] parseRSS(InputStream inputStream, RssNewsSource dataSource) throws IOException, ParserConfigurationException, SAXException {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
@@ -80,7 +86,7 @@ public class DataRetrieverRSS extends DataRetriever<RssNewsSource> {
                 Element itemElement = (Element) itemNode;
                 Optional<String> guid = Optional.ofNullable(itemElement.getElementsByTagName("guid").item(0))
                         .map(item -> item.getTextContent().toString());
-                String title = itemElement.getElementsByTagName("title").item(0).getTextContent().toString()
+                String title = itemElement.getElementsByTagName("title").item(0).getTextContent().toString().trim()
                         .transform(txt -> checkAddLastDot(txt));
                 String link = itemElement.getElementsByTagName("link").item(0).getTextContent().toString();
                 Optional<String> description = Optional.ofNullable(itemElement.getElementsByTagName("description").item(0))
@@ -94,6 +100,21 @@ public class DataRetrieverRSS extends DataRetriever<RssNewsSource> {
                 description = description.map(txt -> checkAddLastDot(txt));
                 String extId = guid.orElse(link);
 
+
+                Optional<Timestamp> pubDate;
+                try {
+                    pubDate = Optional.ofNullable(itemElement.getElementsByTagName("pubDate").item(0))
+                            .map(item -> item.getTextContent())
+                            .map(dateTxt -> {
+                                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
+                                LocalDateTime localDateTime = LocalDateTime.parse(dateTxt, formatter);
+                                return Timestamp.valueOf(localDateTime);
+                            });
+                }
+                catch (Exception e){
+                    pubDate = Optional.empty();
+                }
+
                 result.add(
                         NewsData.builder()
                                 .id(extId)
@@ -103,6 +124,8 @@ public class DataRetrieverRSS extends DataRetriever<RssNewsSource> {
                                 .title(title)
                                 .description(description)
                                 .text(Optional.empty())
+                                .pubDate(pubDate)
+                                .fetchDate(new Timestamp(System.currentTimeMillis()))   //TODO: Move upper
                                 .build()
                 );
             }
@@ -116,6 +139,8 @@ public class DataRetrieverRSS extends DataRetriever<RssNewsSource> {
         return doc.text();
     }
 
+
+    // TODO: Replace with breaker
     private Optional<String> getFirstSentense(Optional<String> src) {
         String regex = "^[^.!?]*[.!?]";
         Pattern pattern = Pattern.compile(regex);

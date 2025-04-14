@@ -3,5 +3,17 @@ package com.fbytes.llmka.service.Herald;
 import com.fbytes.llmka.model.heraldmessage.HeraldMessage;
 
 public interface IHeraldService<T extends HeraldMessage> {
-    void sendMessage(T msg);
+    void sendMessage(T msg) throws SendMessageException;
+
+
+
+    public abstract class SendMessageException extends Exception{}
+
+    public class SendMessageExceptionTemporary extends SendMessageException {
+
+    }
+
+    public class SendMessageExceptionPermanent extends SendMessageException {
+
+    }
 }

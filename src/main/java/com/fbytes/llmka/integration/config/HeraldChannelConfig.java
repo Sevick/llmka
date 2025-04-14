@@ -2,10 +2,10 @@ package com.fbytes.llmka.integration.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fbytes.llmka.integration.service.HeraldConfigService;
-import com.fbytes.llmka.model.EmbeddedData;
-import com.fbytes.llmka.model.Mapping;
-import com.fbytes.llmka.model.heraldchannel.Herald;
-import com.fbytes.llmka.model.heraldchannel.HeraldTelegram;
+import com.fbytes.llmka.model.config.Mapping;
+import com.fbytes.llmka.model.NewsData;
+import com.fbytes.llmka.model.config.heraldchannel.Herald;
+import com.fbytes.llmka.model.config.heraldchannel.HeraldTelegram;
 import com.fbytes.llmka.model.heraldmessage.TelegramMessage;
 import com.fbytes.llmka.service.Herald.IHeraldService;
 import com.fbytes.llmka.service.Herald.impl.HeraldServiceTelegram;
@@ -66,21 +66,8 @@ public class HeraldChannelConfig implements ApplicationListener<ContextRefreshed
         this.applicationContext = (GenericApplicationContext) applicationContext;
     }
 
-    @Override
-    public void onApplicationEvent(ContextRefreshedEvent event) {
 
-        ConfigurableApplicationContext context = (ConfigurableApplicationContext) event.getApplicationContext();
-        DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) context.getAutowireCapableBeanFactory();
-
-        Mapping[] mappings;
-
-        try {
-            String content = Files.readString(Path.of(mappingConfigFile));
-            mappings = mapper.readValue(content, Mapping[].class);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
+    private void createOutputChannels(Mapping[] mappings, ConfigurableApplicationContext context) {
         // create pub-sub channel for each unique "outputChannel" in mappings
         Set<String> outputChannels = Arrays.stream(mappings).map(mapping -> mapping.getOutputChannel()).collect(Collectors.toSet());
         outputChannels.forEach(channelName -> {
@@ -88,6 +75,10 @@ public class HeraldChannelConfig implements ApplicationListener<ContextRefreshed
             channel.setBeanName(channelName);
             context.getBeanFactory().registerSingleton(channelName, channel);
         });
+    }
+
+    private Map<String, List<Pair<String, IHeraldService>>> createHeraldServices() {
+        DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) applicationContext.getAutowireCapableBeanFactory();
 
         // TODO: Make generic for other heralds
         // create herald services
@@ -123,7 +114,26 @@ public class HeraldChannelConfig implements ApplicationListener<ContextRefreshed
             PublishSubscribeChannel outChannel = ((PublishSubscribeChannel) beanFactory.getBean(herald.getChannel()));
             outChannel.subscribe(bridgeHandler);
         }
+        return outchannelToHeraldServiceMap;
+    }
 
+    @Override
+    public void onApplicationEvent(ContextRefreshedEvent event) {
+
+        ConfigurableApplicationContext context = (ConfigurableApplicationContext) event.getApplicationContext();
+        DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) context.getAutowireCapableBeanFactory();
+
+        Mapping[] mappings;
+
+        try {
+            String content = Files.readString(Path.of(mappingConfigFile));
+            mappings = mapper.readValue(content, Mapping[].class);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        createOutputChannels(mappings, context);
+        Map<String, List<Pair<String, IHeraldService>>> outchannelToHeraldServiceMap = createHeraldServices();
 
         // bind heralds to corresponding output channels
         outchannelToHeraldServiceMap.entrySet().forEach(entry -> {
@@ -134,7 +144,13 @@ public class HeraldChannelConfig implements ApplicationListener<ContextRefreshed
 
                 IntegrationFlow heraldQFlow = IntegrationFlow
                         .from(heraldQueueChannel)
-                        .handle(message -> heraldNameService.getRight().sendMessage(new TelegramMessage((String) message.getPayload())),
+                        .handle(message -> {
+                                    try {
+                                        heraldNameService.getRight().sendMessage(TelegramMessage.fromNewsData((NewsData) message.getPayload()));
+                                    } catch (IHeraldService.SendMessageException e) {
+                                        heraldQueueChannel.send(message);
+                                    }
+                                },
                                 e -> e.poller(telegramPoller))
                         .get();
                 beanFactory.registerSingleton(heraldQName + "-Flow", heraldQFlow);
@@ -146,17 +162,16 @@ public class HeraldChannelConfig implements ApplicationListener<ContextRefreshed
         // Router (route messages from heraldChannel to appropriate pub-sub)
         HeaderValueRouter router = new HeaderValueRouter(newsGroupHeader);
         router.setChannelMappings(Stream.of(mappings).collect(Collectors.toMap(Mapping::getInputGroup, Mapping::getOutputChannel)));
-        // TODO
-        // router.setDefaultOutputChannel();
+        // TODO: router.setDefaultOutputChannel();
         beanFactory.registerSingleton("heraldRouter", router);
 
         IntegrationFlow heraldFlow = IntegrationFlow
                 .from(heraldChannel)
-                .<EmbeddedData, String>transform(embeddedData -> String.format("*%s* %s\t([%s](%s))",
-                        embeddedData.getNewsData().getTitle(),
-                        embeddedData.getNewsData().getDescription().orElse(""),
-                        embeddedData.getNewsData().getDataSourceName(),
-                        embeddedData.getNewsData().getLink()))
+//                .<EmbeddedData, String>transform(embeddedData -> String.format("*%s* %s\t([%s](%s))",
+//                        embeddedData.getNewsData().getTitle(),
+//                        embeddedData.getNewsData().getDescription().orElse(""),
+//                        embeddedData.getNewsData().getDataSourceName(),
+//                        embeddedData.getNewsData().getLink()))
                 .route(router)
                 .get();
         beanFactory.registerSingleton("heraldFlow", heraldFlow);

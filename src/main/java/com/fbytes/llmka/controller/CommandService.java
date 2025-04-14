@@ -1,7 +1,6 @@
 package com.fbytes.llmka.controller;
 
 import com.fbytes.llmka.service.Maintenance.IMaintenanceService;
-import com.fbytes.llmka.service.NewsCheck.INewsCheck;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Profile;
@@ -12,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Arrays;
+import java.util.List;
 
 @RestController
 @Profile("dev")
@@ -24,7 +24,7 @@ public class CommandService {
     IMaintenanceService maintenanceService;
 
     @GetMapping("/compress")
-    public ResponseEntity compressStore(@RequestParam(name = "schema", required = true) String schema) {
+    public ResponseEntity<String> compressStore(@RequestParam(name = "schema", required = true) String schema) {
         try {
             maintenanceService.compressDB(schema);
         } catch (Exception e) {
@@ -35,7 +35,7 @@ public class CommandService {
 
 
     @GetMapping("/beans")
-    public ResponseEntity beans() {
+    public ResponseEntity<List<String>> beans() {
         return ResponseEntity.ok().body(Arrays.asList(applicationContext.getBeanDefinitionNames()));
     }
 }

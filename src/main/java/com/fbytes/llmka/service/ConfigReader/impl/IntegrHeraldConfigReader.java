@@ -1,6 +1,6 @@
 package com.fbytes.llmka.service.ConfigReader.impl;
 
-import com.fbytes.llmka.model.heraldchannel.Herald;
+import com.fbytes.llmka.model.config.heraldchannel.Herald;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

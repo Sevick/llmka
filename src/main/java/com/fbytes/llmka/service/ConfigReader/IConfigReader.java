@@ -1,6 +1,6 @@
 package com.fbytes.llmka.service.ConfigReader;
 
-import com.fbytes.llmka.model.IConfigFactory;
+import com.fbytes.llmka.model.config.IConfigFactory;
 
 import java.io.File;
 import java.io.IOException;

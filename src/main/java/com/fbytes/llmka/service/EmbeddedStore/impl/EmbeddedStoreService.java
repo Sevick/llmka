@@ -29,17 +29,16 @@ public class EmbeddedStoreService implements IEmbeddedStoreService {
 
     private ConcurrentMap<String, IEmbeddedStore> embeddedStoreMap = new ConcurrentHashMap<>();
 
+
     @PreDestroy
     private void onShutdown(){
-        embeddedStoreMap.entrySet().forEach(entry -> {
-            entry.getValue().save();
-        });
+        embeddedStoreMap.entrySet().forEach(entry ->  entry.getValue().save());
     }
 
 
     private IEmbeddedStore schemaStore(String schema) {
         return embeddedStoreMap.computeIfAbsent(schema, k -> {
-            EmbeddedStore newStore = new EmbeddedStore(k);
+            EmbeddedStore newStore = new EmbeddedStore(k, true);
             context.getAutowireCapableBeanFactory().autowireBean(newStore);
             String beanName = "newStore-" + schema;
             context.getAutowireCapableBeanFactory().initializeBean(newStore, beanName);

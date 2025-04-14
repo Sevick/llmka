@@ -2,9 +2,8 @@ package com.fbytes.llmka.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fbytes.llmka.integration.service.HeraldConfigService;
-import com.fbytes.llmka.model.IConfigFactory;
-import com.fbytes.llmka.model.heraldchannel.Herald;
-import com.fbytes.llmka.model.heraldchannel.HeraldFactory;
+import com.fbytes.llmka.model.config.IConfigFactory;
+import com.fbytes.llmka.model.config.heraldchannel.Herald;
 import com.fbytes.llmka.service.ConfigReader.IConfigReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

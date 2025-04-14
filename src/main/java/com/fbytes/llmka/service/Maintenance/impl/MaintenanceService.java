@@ -3,9 +3,10 @@ package com.fbytes.llmka.service.Maintenance.impl;
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.service.EmbeddedStore.impl.EmbeddedStoreService;
 import com.fbytes.llmka.service.Maintenance.IMaintenanceService;
-import com.fbytes.llmka.service.NewsCheck.impl.NewsMetaCheck;
+import com.fbytes.llmka.service.NewsCheck.impl.NewsCheckMeta;
 import io.micrometer.core.annotation.Timed;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
@@ -17,7 +18,8 @@ public class MaintenanceService implements IMaintenanceService {
     @Autowired
     private EmbeddedStoreService embeddedStoreService;
     @Autowired
-    private NewsMetaCheck newsMetaCheck;
+    @Qualifier("newCheckMeta")
+    private NewsCheckMeta newsCheckMeta;
 
 
     @Override
@@ -30,7 +32,7 @@ public class MaintenanceService implements IMaintenanceService {
 
     public void cleanupStore(String schema) {
         //logger.info("cleanupStore. Current hash size: {}", metaHash.size());
-        Set<String> idsSet = newsMetaCheck.fetchIDList();
+        Set<String> idsSet = newsCheckMeta.fetchIDList();
         embeddedStoreService.removeOtherIDes(schema, idsSet);
     }
 }

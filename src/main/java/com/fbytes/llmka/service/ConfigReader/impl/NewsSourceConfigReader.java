@@ -1,6 +1,6 @@
 package com.fbytes.llmka.service.ConfigReader.impl;
 
-import com.fbytes.llmka.model.newssource.NewsSource;
+import com.fbytes.llmka.model.config.newssource.NewsSource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
