@@ -1,5 +1,7 @@
 package com.fbytes.llmka.service.LLMProvider.impl;
 
+import com.fbytes.llmka.logger.Logger;
+import com.fbytes.llmka.service.LLMProvider.LLMProvider;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
@@ -15,11 +17,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Qualifier("localPhi4")
 public class LLMProviderLocalPhi4 extends LLMProvider {
+    private static final Logger logger = Logger.getLogger(LLMProviderLocalPhi4.class);
 
     @Value("${llmka.llm_provider.phi4_onprem.model_name}")
     private String model_name;
@@ -29,15 +34,19 @@ public class LLMProviderLocalPhi4 extends LLMProvider {
     private Duration timeOut;
 
     public LLMProviderLocalPhi4(@Autowired MeterRegistry meterRegistry) {
-        super(meterRegistry);
+        super("localPhi4", meterRegistry);
     }
 
     @Override
-    public String askLLMImpl(String systemPrompt, String userPrompt) {
-        List<ChatMessage> messages = List.of(
-                SystemMessage.from(systemPrompt),
-                UserMessage.from(userPrompt)
-        );
+    public String askLLMImpl(Optional<String> systemPrompt, String userPrompt, Optional<ResponseFormat> responseFormat) {
+        List<ChatMessage> messages = new ArrayList<>();
+        if (userPrompt != null && !userPrompt.isEmpty()) {
+            messages.add(UserMessage.from(userPrompt));
+        } else {
+            throw new RuntimeException("User prompt should not be null or empty");
+        }
+        systemPrompt.ifPresent(systemPromptStr -> messages.add(SystemMessage.from(systemPromptStr)));
+
         ChatLanguageModel model = OllamaChatModel.builder()
                 .baseUrl(base_url)
                 .modelName(model_name)

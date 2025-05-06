@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:wfw="http://wellformedweb.org/CommentAPI/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:sy="http://purl.org/rss/1.0/modules/syndication/" xmlns:slash="http://purl.org/rss/1.0/modules/slash/">
+	<channel>
+		<title>TechCrunch</title>
+		<atom:link href="https://techcrunch.com/feed/" rel="self" type="application/rss+xml"/>
+		<link>https://techcrunch.com/</link>
+		<description>Startup and Technology News</description>
+		<lastBuildDate>Mon, 05 May 2025 23:05:57 +0000</lastBuildDate>
+		<language>en-US</language>
+		<sy:updatePeriod>hourly</sy:updatePeriod>
+		<sy:updateFrequency>1</sy:updateFrequency>
+		<generator>https://wordpress.org/?v=6.7.2</generator>
+		<item>
+			<title>Anduril is working on the difficult AI-related task of real-time edge computing</title>
+			<link>https://techcrunch.com/2025/05/05/anduril-is-working-on-the-difficult-ai-related-task-of-real-time-edge-computing/</link>
+			<dc:creator><![CDATA[Julie Bort]]></dc:creator>
+			<pubDate>Mon, 05 May 2025 20:30:06 +0000</pubDate>
+			<category><![CDATA[Venture]]></category>
+			<guid isPermaLink="false">https://techcrunch.com/?p=3003118</guid>
+			<description><![CDATA[Anduril announced its ninth acquisition on Monday with the purchase of Dublin’s Klas, makers of ruggedized edge computing equipment for the military and first-responders. Anduril wouldn’t reveal financial details of the deal, and the purchase is subject to regulatory approval, but the company did say that Klas employs 150 people.&#160; Relatedly, on Monday, Anduril also [&#8230;]]]></description>
+		</item>
+		<item>
+        	<title>A stealth AI model beat DALL-E and Midjourney on a popular benchmark — its creator just landed $30M</title>
+        	<link>https://techcrunch.com/2025/05/05/a-stealth-ai-model-beat-dall-e-and-midjourney-on-a-popular-benchmark-its-creator-just-landed-30m/</link>
+        	<dc:creator><![CDATA[Charles Rollet]]></dc:creator>
+        	<pubDate>Mon, 05 May 2025 21:12:00 +0000</pubDate>
+        	<category><![CDATA[Startups]]></category>
+        	<category><![CDATA[Exclusive]]></category>
+        	<category><![CDATA[image generator]]></category>
+        	<category><![CDATA[MidJourney]]></category>
+        	<category><![CDATA[OpenAI]]></category>
+        	<category><![CDATA[Recraft]]></category>
+        	<guid isPermaLink="false">https://techcrunch.com/?p=3003182</guid>
+        	<description><![CDATA[Recraft, the startup behind a mysterious image model that beat OpenAI’s DALL-E and Midjourney on a respected industry benchmark last year, has raised a $30 million Series B round led by Accel, it exclusively told TechCrunch.&#160; Other investors in the round include Khosla Ventures and Madrona. Based in San Francisco, Recraft previously raised a $12 [&#8230;]]]></description>
+        </item>
+	</channel>
+</rss>

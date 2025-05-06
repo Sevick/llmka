@@ -2,9 +2,9 @@ package playground.real;
 
 import com.fbytes.llmka.LLMka;
 import com.fbytes.llmka.config.TelegramBotConfig;
-import com.fbytes.llmka.model.config.heraldchannel.HeraldTelegram;
+import com.fbytes.llmka.model.config.heraldchannel.HeraldConfigTelegram;
 import com.fbytes.llmka.model.heraldmessage.TelegramMessage;
-import com.fbytes.llmka.service.Herald.impl.HeraldServiceTelegram;
+import com.fbytes.llmka.service.Herald.impl.HeraldTelegram;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +15,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 @Disabled
 @SpringBootTest(classes = LLMka.class)
 @EnableConfigurationProperties(TelegramBotConfig.class)
-public class TelegramBotTest {
+class TelegramBotTest {
 
     @Autowired
     private ConfigurableApplicationContext context;
@@ -26,10 +26,10 @@ public class TelegramBotTest {
 
 
     @Test
-    public void sendMessageTest() {
+    void sendMessageTest() {
 
-        HeraldServiceTelegram newHeraldService = new HeraldServiceTelegram(
-                new HeraldTelegram("id", testChannel, "name", "bot"));
+        HeraldTelegram newHeraldService = new HeraldTelegram(
+                new HeraldConfigTelegram("id", testChannel, "name", "bot"));
         context.getAutowireCapableBeanFactory().autowireBean(newHeraldService);
         context.getBeanFactory().registerSingleton("TestHerald", newHeraldService);
 

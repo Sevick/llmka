@@ -23,7 +23,7 @@ public class NewsCheckDataSelector implements MessageSelector {
 
     @Autowired
     @Qualifier("newsCheckData")
-    private INewsCheck newsDataCheck;
+    private INewsCheck newsCheckData;
     @Value("${llmka.herald.news_group_header}")
     private String newsGroupHeader;
 
@@ -39,8 +39,8 @@ public class NewsCheckDataSelector implements MessageSelector {
         try {
             String schema = (String) message.getHeaders().get(newsGroupHeader);
             if (schema == null)
-                throw new RuntimeException("NewsDataCheckSelector expects " + newsGroupHeader + " header to be set");
-            Optional<INewsCheck.RejectReason> result = newsDataCheck.checkNews(schema, (NewsData) message.getPayload());
+                throw new RuntimeException("NewsCheckDataSelector expects " + newsGroupHeader + " header to be set");
+            Optional<INewsCheck.RejectReason> result = newsCheckData.checkNews(schema, (NewsData) message.getPayload());
             if (!result.isEmpty()) {
                 Message<?> rejectedMessage = MessageBuilder.fromMessage(message)
                         .setHeader(rejectReasonHeader, result.get().getReason())
@@ -50,8 +50,7 @@ public class NewsCheckDataSelector implements MessageSelector {
                 return false;
             }
             return true;
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             logger.logException(e);
             throw e;
         }

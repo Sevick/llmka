@@ -1,6 +1,6 @@
 package com.fbytes.llmka.service.NewsCheck.impl;
 
-import com.fbytes.llmka.config.profiles.merics.ParamTimedMetric;
+import com.fbytes.llmka.config.profiles.metrics.ParamTimedMetric;
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.EmbeddedData;
 import com.fbytes.llmka.model.NewsData;
@@ -24,6 +24,8 @@ import java.util.Set;
 public class NewsCheckData implements INewsCheck {
     private static final Logger logger = Logger.getLogger(NewsCheckData.class);
 
+    @Value("${llmka.newscheck.datacheck.enabled:true}")
+    private Boolean serviceEnabled;
     @Value("#{T(Float).parseFloat('${llmka.newscheck.datacheck.score_limit}')}")
     private Float scoreLimit;
 
@@ -34,22 +36,25 @@ public class NewsCheckData implements INewsCheck {
 
     @Override
     @ParamTimedMetric(key = "schema")
-    @NewSpan(name = "checkdata-span")
     public Optional<RejectReason> checkNews(String schema, NewsData newsData) {
+        if (!serviceEnabled)
+            return Optional.empty();
+
         EmbeddedData embeddedData = embeddingService.embedNewsData(newsData);
         Optional<List<Content>> result = embeddingStoreService.checkAndStore(schema, embeddedData.getSegments(), embeddedData.getEmbeddings(), scoreLimit);
         if (!result.isEmpty()) {
-            return Optional.of(new RejectReason(RejectReason.REASON.CLOSE_MATCH, result.get().get(0).textSegment().text()));
+            logger.trace("[{}] NewsCheckData filtered: {}  CloseMatch: {}", schema, newsData.toText(), Optional.of(result.get().get(0).textSegment().text()));
+            return Optional.of(new RejectReason(RejectReason.REASON.CLOSE_MATCH, Optional.of(result.get().get(0).textSegment().text())));
         }
-        logger.debug("{}: news check passed", schema);
+        logger.trace("[{}] news check passed", schema);
         return Optional.empty();
     }
 
 
     // remove all IDes, that are not in metaHash
-    @Timed(value = "llmka.newsdatacheck.cleanupstore.time", description = "time to cleanup the store", percentiles = {0.5, 0.9})
+    @Timed(value = "llmka.newscheckdata.cleanupstore.time", description = "time to cleanup the store", percentiles = {0.5, 0.9})
     public void cleanupStore(String schema, Set<String> idsSet) {
-        logger.info("{} cleanupStore", schema);
+        logger.info("[{}] cleanupStore", schema);
         embeddingStoreService.removeOtherIDes(schema, idsSet);
     }
 }

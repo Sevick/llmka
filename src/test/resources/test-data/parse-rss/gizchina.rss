@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:wfw="http://wellformedweb.org/CommentAPI/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:sy="http://purl.org/rss/1.0/modules/syndication/" xmlns:slash="http://purl.org/rss/1.0/modules/slash/">
+	<channel>
+		<title>Gizchina.com</title>
+		<atom:link href="https://www.gizchina.com/feed/" rel="self" type="application/rss+xml"/>
+		<link>https://www.gizchina.com/</link>
+		<description>Chinese phone, Android smartphone, tablet news and reviews</description>
+		<lastBuildDate>Mon, 05 May 2025 23:49:06 +0000</lastBuildDate>
+		<language>en-US</language>
+		<sy:updatePeriod>hourly</sy:updatePeriod>
+		<sy:updateFrequency>1</sy:updateFrequency>
+		<image>
+			<url>https://www.gizchina.com/wp-content/uploads/images/2018/04/favicon-16x16.png</url>
+			<title>Gizchina.com</title>
+			<link>https://www.gizchina.com/</link>
+			<width>32</width>
+			<height>32</height>
+		</image>
+		<site xmlns="com-wordpress:feed-additions:1">37985201</site>
+		<item>
+			<title>Honor 400 Leaks on Geekbench with Snapdragon 7 Gen 3</title>
+			<link>https://www.gizchina.com/2025/05/05/honor-400-leaks-on-geekbench-with-snapdragon-7-gen-3/</link>
+			<dc:creator><![CDATA[Abdullah Mustapha]]></dc:creator>
+			<pubDate>Mon, 05 May 2025 12:26:54 +0000</pubDate>
+			<category><![CDATA[Honor]]></category>
+			<category><![CDATA[news]]></category>
+			<category><![CDATA[Honor 400]]></category>
+			<category><![CDATA[Honor 400 features]]></category>
+			<category><![CDATA[Honor 400 Geekbench]]></category>
+			<category><![CDATA[Honor 400 specs]]></category>
+			<category><![CDATA[Snapdragon 7+ Gen 3]]></category>
+			<guid isPermaLink="false">https://www.gizchina.com/?p=483537</guid>
+			<description><![CDATA[<img width="1920" height="1080" src="https://www.gizchina.com/wp-content/uploads/images/2025/01/honor-6.jpg" class="webfeedsFeaturedVisual wp-post-image" alt="Honor 400" style="display: block; margin-bottom: 5px; clear:both;max-width: 100%;" link_thumbnail="" decoding="async" loading="lazy" srcset="https://www.gizchina.com/wp-content/uploads/images/2025/01/honor-6.jpg 1920w, https://www.gizchina.com/wp-content/uploads/images/2025/01/honor-6-300x169.jpg 300w, https://www.gizchina.com/wp-content/uploads/images/2025/01/honor-6-1024x576.jpg 1024w, https://www.gizchina.com/wp-content/uploads/images/2025/01/honor-6-768x432.jpg 768w, https://www.gizchina.com/wp-content/uploads/images/2025/01/honor-6-1536x864.jpg 1536w, https://www.gizchina.com/wp-content/uploads/images/2025/01/honor-6-150x83.jpg 150w, https://www.gizchina.com/wp-content/uploads/images/2025/01/honor-6-335x188.jpg 335w, https://www.gizchina.com/wp-content/uploads/images/2025/01/honor-6-700x394.jpg 700w, https://www.gizchina.com/wp-content/uploads/images/2025/01/honor-6-1080x608.jpg 1080w, https://www.gizchina.com/wp-content/uploads/images/2025/01/honor-6-1200x675.jpg 1200w" sizes="auto, (max-width: 1920px) 100vw, 1920px" itemprop="image" /><p>Honor&#8217;s 400 series launch is imminent. Following the previous appearance of Honor 400 Pro on Geekbench, now even the vanilla Honor 400 has shown up ...</p>
+<p>The post <a href="https://www.gizchina.com/2025/05/05/honor-400-leaks-on-geekbench-with-snapdragon-7-gen-3/" data-wpel-link="internal" target="_self" rel="follow noopener noreferrer">Honor 400 Leaks on Geekbench with Snapdragon 7 Gen 3</a> appeared first on <a href="https://www.gizchina.com" data-wpel-link="internal" target="_self" rel="follow noopener noreferrer">Gizchina.com</a>.</p>
+]]></description>
+			<post-id xmlns="com-wordpress:feed-additions:1">483537</post-id>
+		</item>
+	</channel>
+</rss>

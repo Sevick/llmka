@@ -18,7 +18,7 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 @SpringBootApplication
 @EnableIntegration
-@EnableIntegrationManagement(observationPatterns = "*")
+@EnableIntegrationManagement(defaultLoggingEnabled = "true", observationPatterns = "*")
 //@EnableWebMvc
 @EnableConfigurationProperties(TelegramBotConfig.class)
 public class LLMka {

@@ -1,12 +1,12 @@
 package unit;
 
+import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.NewsData;
-import com.fbytes.llmka.service.EmbeddedStore.impl.EmbeddedStoreService;
+import com.fbytes.llmka.service.EmbeddedStore.EmbeddedStoreService;
 import com.fbytes.llmka.service.Embedding.IEmbeddingService;
-import com.fbytes.llmka.service.Embedding.impl.EmbeddingService;
+import com.fbytes.llmka.service.Embedding.EmbeddingService;
 import com.fbytes.llmka.service.NewsCheck.INewsCheck;
 import com.fbytes.llmka.service.NewsCheck.impl.NewsCheckData;
-import com.fbytes.llmka.service.NewsCheck.impl.NewsCheckMeta;
 import config.TestConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,10 +16,11 @@ import org.springframework.util.Assert;
 
 import java.util.Optional;
 
-@SpringBootTest(classes = {EmbeddingService.class, NewsCheckData.class, EmbeddedStoreService.class, NewsCheckMeta.class})
+@SpringBootTest(classes = {EmbeddingService.class, NewsCheckData.class, EmbeddedStoreService.class})
 @ContextConfiguration(classes = {TestConfig.class})
 class NewsCheckDataTest {
-
+    private static final Logger logger = Logger.getLogger(NewsCheckDataTest.class);
+    
     @Autowired
     private NewsCheckData newsCheckDataService;
     @Autowired

@@ -1,0 +1,21 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0">
+	<channel>
+		<title>News.Israelinfo.co.il - Новости Израиля</title>
+		<link>https://news.israelinfo.co.il</link>
+		<description>Новости Израиля. Только самые главные и интересные новости из Израиля. Ежедневное издание.</description>
+		<atom:link href="https://news.israelinfo.co.il" rel="self"/>
+		<docs>http://www.rssboard.org/rss-specification</docs>
+		<language>ru</language>
+		<lastBuildDate>Thu, 17 Apr 2025 13:35:02 +0000</lastBuildDate>
+		<item>
+			<title>Reuters: Северная Корея поставила РФ миллионы снарядов, обеспечив возможность войны на истощение</title>
+			<link>https://news.israelinfo.co.il/131646</link>
+			<description><![CDATA[ Как показало расследование Reuters, в течение почти 20 месяцев миллионы северокорейских снарядов поступали в РФ в огромных количествах по морю, а затем по железной дороге. Поток оружия в сочетании с отправкой на фронт 14 000 северокорейских солдат дал России критическое преимущество на поле боя, пишет издание. ]]></description>
+			<author>news@israelinfo.co.il (Редакция сайта)</author>
+			<guid isPermaLink="false">https://news.israelinfo.co.il/131646</guid>
+			<category>В мире</category>
+			<enclosure url="https://news-static.israelinfo.co.il/pictures/news/76/75085.webp" length="1" type="image/webp"/>
+			<pubDate>Wed, 16 Apr 2025 10:18:47 +0300</pubDate>
+		</item>
+	</channel>
+</rss>

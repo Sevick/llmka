@@ -22,6 +22,11 @@ public class StepProcessNewsSource {
 
     @Value("${llmka.herald.news_group_header}")
     private String newsGroupHeader;
+    @Value("${llmka.newssource_header}")
+    private String newsSourceHeader;
+    @Value("${llmka.newsdata_header}")
+    private String newsDataHeader;
+
 
     @Bean(name = "newsSourceChannel")
     public MessageChannel newsSourceChannel() {
@@ -37,21 +42,21 @@ public class StepProcessNewsSource {
         return channel;
     }
 
-
-    @Autowired
-    @Qualifier("dataRetrieveService")
-    IDataRetrieveService dataRetrieveService;
-
     @Bean
-    public org.springframework.integration.dsl.IntegrationFlow processNewsSource() {
+    public org.springframework.integration.dsl.IntegrationFlow processNewsSource(@Autowired @Qualifier("dataRetrieveService") IDataRetrieveService dataRetrieveService) {
         return IntegrationFlow
                 .from("newsSourceChannel")
-                .enrichHeaders(h -> h.headerFunction(newsGroupHeader,
-                        m -> ((NewsSource) m.getPayload()).getGroup()))
+                .enrichHeaders(h -> h
+                        .headerFunction(newsGroupHeader,m -> ((NewsSource) m.getPayload()).getGroup())
+                        .headerFunction(newsSourceHeader, m -> ((NewsSource) m.getPayload()).getName())
+                )
                 .handle(dataRetrieveService, "retrieveData")
                 .filter((Optional<Stream<NewsData>> opt) -> !opt.isEmpty())
                 .transform((Optional<Stream<NewsData>> opt) -> opt.get())
-                .split()
+                .split()    // headers copied to each message
+                .enrichHeaders(h -> h
+                        .headerFunction(newsDataHeader,m -> ((NewsData) m.getPayload()).getId())
+                )
                 .channel("newsDataChannelOut")
                 .get();
     }

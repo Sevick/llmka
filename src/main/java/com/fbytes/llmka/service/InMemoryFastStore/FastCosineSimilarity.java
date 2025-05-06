@@ -35,9 +35,11 @@ public class FastCosineSimilarity {
      *
      * @param embeddingA first embedding vector
      * @param embeddingB second embedding vector
+     * @param normA precomputed norm of the first embedding vector
+     * @param normB precomputed norm of the second embedding vector
      * @return cosine similarity in the range [-1..1]
      */
-    public static double between(Embedding embeddingA, Embedding embeddingB, double normA) {
+    public static double between(Embedding embeddingA, Embedding embeddingB, double normA, double normB) {
         ensureNotNull(embeddingA, "embeddingA");
         ensureNotNull(embeddingB, "embeddingB");
 
@@ -50,17 +52,13 @@ public class FastCosineSimilarity {
         }
 
         double dotProduct = 0.0;
-        //double normA = 0.0;
-        double normB = 0.0;
 
         for (int i = 0; i < vectorA.length; i++) {
             dotProduct += vectorA[i] * vectorB[i];
-            //normA += vectorA[i] * vectorA[i];
-            normB += vectorB[i] * vectorB[i];
         }
 
         // Avoid division by zero.
-        return dotProduct / Math.max(normA * Math.sqrt(normB), EPSILON);
+        return dotProduct / Math.max(normA * normB, EPSILON);
     }
 
 

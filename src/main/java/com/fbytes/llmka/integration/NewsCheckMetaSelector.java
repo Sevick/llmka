@@ -39,7 +39,7 @@ public class NewsCheckMetaSelector implements MessageSelector {
         try {
             String schema = (String) message.getHeaders().get(newsGroupHeader);
             if (schema == null)
-                throw new RuntimeException("NewsMetaCheckSelector expects " + newsGroupHeader + " header to be set");
+                throw new RuntimeException("NewsCheckMetaSelector expects " + newsGroupHeader + " header to be set");
             Optional<INewsCheck.RejectReason> result = newsMetaCheck.checkNews(schema, (NewsData) message.getPayload());
             if (!result.isEmpty()) {
                 Message<?> rejectedMessage = MessageBuilder.fromMessage(message)

@@ -1,18 +1,18 @@
 package unit;
 
+import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.EmbeddedData;
 import com.fbytes.llmka.model.NewsData;
 import com.fbytes.llmka.service.EmbeddedStore.dao.IEmbeddedStore;
-import com.fbytes.llmka.service.EmbeddedStore.dao.impl.EmbeddedStore;
+import com.fbytes.llmka.service.EmbeddedStore.dao.EmbeddedStore;
 import com.fbytes.llmka.service.Embedding.IEmbeddingService;
-import com.fbytes.llmka.service.Embedding.impl.EmbeddingService;
+import com.fbytes.llmka.service.Embedding.EmbeddingService;
 import dev.langchain4j.rag.content.Content;
 import jakarta.annotation.PreDestroy;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.Assert;
 
@@ -24,12 +24,9 @@ import java.util.stream.Stream;
 
 @SpringBootTest(classes = {EmbeddingService.class, EmbeddedStoreTest.EmbeddedStoreTestConfig.class})
 class EmbeddedStoreTest {
-
+    private static final Logger logger = Logger.getLogger(EmbeddedStoreTest.class);
     @Autowired
     private IEmbeddingService embeddingService;
-
-    @Autowired
-    private ApplicationContext context;
 
     @Autowired
     private IEmbeddedStore embeddedStore;
@@ -80,7 +77,7 @@ class EmbeddedStoreTest {
 
 
     @PreDestroy
-    private void removeTestData() {
+    private void onShutdown() {
         embeddedStore.removeOtherIDes(new ArrayList<>());
         embeddedStore.cleanStorage();
     }

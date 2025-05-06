@@ -3,12 +3,12 @@
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout  charset="UTF-8"
-                            pattern="%d{MM-dd HH:mm:ss} %pid %tid %-5p %c{1}:%L - %m%n"/>
+                            pattern="%d{MM-dd HH:mm:ss} %tid %-5p %c{1}:%L - %m%n"/>
         </Console>
         <RollingFile name="RollingFileAppender" fileName="logs/llmka.log"
                      filePattern="logs/llmka-%i.log">
             <PatternLayout charset="UTF-8"
-                           pattern="%d{MM-dd HH:mm:ss} %pid %tid %-5p %c{1}:%L - %m%n"/>
+                           pattern="%d{MM-dd HH:mm:ss} %tid %-5p %c{1}:%L - %m%n"/>
             <Policies>
                 <SizeBasedTriggeringPolicy size="10MB"/>
             </Policies>
@@ -18,15 +18,17 @@
     <Loggers>
         <Logger name="com.fbytes.llmka" level="debug" additivity="false">
             <AppenderRef ref="Console"/>
-            <AppenderRef ref="RollingFileAppender"/>
         </Logger>
-        <Logger name="org.springframework.integration.router" level="debug" additivity="false">
+        <Logger name="com.fbytes.llmka" level="debug" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
-        <Logger name="org.springframework.integration.router" level="debug" additivity="false">
+        <Logger name="org.springframework.integration" level="debug" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
-        <Logger name="org.springframework.integration.router" level="debug" additivity="false">
+        <Logger name="org.springframework.integration.filter.MessageFilter" level="error" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+        <Logger name="org.springframework.integration.router" level="info" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
         <Root level="info">

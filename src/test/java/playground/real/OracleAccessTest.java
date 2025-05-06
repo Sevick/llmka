@@ -12,13 +12,13 @@ import org.springframework.web.client.RestTemplate;
 
 @Disabled
 @SpringBootTest(classes = {RestTemplate.class})
-public class OracleAccessTest {
+class OracleAccessTest {
 
     @Autowired
     RestTemplate restTemplate;
 
     @Test
-    public void testOracleAccess() {
+    void testOracleAccess() {
         String testUrl = "https://blogs.oracle.com/java/rss";
 
         HttpHeaders headers = new HttpHeaders();

@@ -15,10 +15,11 @@ public interface INewsCheck {
         public enum REASON {META_DUPLICATION, CLOSE_MATCH, COMMERCIAL}
 
         private RejectReason.REASON reason;
-        private String explain;
+        private Optional<String> explain;
 
         public RejectReason(INewsCheck.RejectReason.REASON reason) {
             this.reason = reason;
+            explain = Optional.empty();
         }
     }
 }

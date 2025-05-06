@@ -11,6 +11,7 @@ import java.util.List;
 @Component
 @Profile("dev")
 public class YamlLogger implements ApplicationListener<ApplicationReadyEvent> {
+
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
         ConfigurableEnvironment environment = (ConfigurableEnvironment) event.getApplicationContext().getEnvironment();

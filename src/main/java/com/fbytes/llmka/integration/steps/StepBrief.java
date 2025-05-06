@@ -1,7 +1,7 @@
 package com.fbytes.llmka.integration.steps;
 
 import com.fbytes.llmka.model.NewsData;
-import com.fbytes.llmka.service.BriefMaker.IBriefMaker;
+import com.fbytes.llmka.service.NewsProcessor.impl.NewsProcessorBrief;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.channel.DirectChannel;
@@ -25,9 +25,9 @@ public class StepBrief {
 
 
     @Bean
-    public org.springframework.integration.dsl.IntegrationFlow briefFlow(IBriefMaker briefMaker) {
+    public org.springframework.integration.dsl.IntegrationFlow briefFlow(NewsProcessorBrief briefNewsProcessor) {
         return org.springframework.integration.dsl.IntegrationFlow.from("briefChannel")
-                .handle(briefMaker, "makeBrief")
+                .handle(briefNewsProcessor, "process")
                 .channel("briefChannelOut")
                 .get();
     }

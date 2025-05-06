@@ -6,6 +6,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.core.MessageSelector;
 
+import java.text.MessageFormat;
+
 @Configuration
 public class MainIntegrationFlow {
     private static final Logger logger = Logger.getLogger(MainIntegrationFlow.class);
@@ -17,38 +19,65 @@ public class MainIntegrationFlow {
 
 
     @Bean
-    public org.springframework.integration.dsl.IntegrationFlow bridgeCheckMeta() {
+    public org.springframework.integration.dsl.IntegrationFlow bridgeDataCheck() {
         return org.springframework.integration.dsl.IntegrationFlow
                 .from("newsDataChannelOut")
-                .channel("newsCheckChannel")
+                .channel("newsCheckMetaChannel")
+                .get();
+    }
+
+
+    @Bean
+    public org.springframework.integration.dsl.IntegrationFlow bridgeMetaCheck() {
+        return org.springframework.integration.dsl.IntegrationFlow
+                .from("newsCheckMetaChannelOut")
+                .channel("newsCheckDataChannel")
                 .get();
     }
 
     @Bean
-    public org.springframework.integration.dsl.IntegrationFlow bridgeBrief() {
+    public org.springframework.integration.dsl.IntegrationFlow bridgeCheckData() {
         return org.springframework.integration.dsl.IntegrationFlow
-                .from("newsCheckChannelOut")
+                .from("newsCheckDataChannelOut")
+                .channel("newsCheckAdChannel")
+                .get();
+    }
+
+
+    @Bean
+    public org.springframework.integration.dsl.IntegrationFlow bridgeCheckAd() {
+        return org.springframework.integration.dsl.IntegrationFlow
+                .from("newsCheckAdChannelOut")
+                .channel("lastSentenceChannel")
+                .get();
+    }
+
+    @Bean
+    public org.springframework.integration.dsl.IntegrationFlow bridgeLastSentence() {
+        return org.springframework.integration.dsl.IntegrationFlow
+                .from("lastSentenceChannelOut")
                 .channel("briefChannel")
                 .get();
     }
 
+
     @Bean
-    public org.springframework.integration.dsl.IntegrationFlow bridgeEmbedding() {
+    public org.springframework.integration.dsl.IntegrationFlow bridgeBrief() {
         return org.springframework.integration.dsl.IntegrationFlow
                 .from("briefChannelOut")
                 .channel("heraldChannel")
                 .get();
     }
 
-
     @Bean
     public org.springframework.integration.dsl.IntegrationFlow newsDataCheckChannelRejectBind() {
         return org.springframework.integration.dsl.IntegrationFlow
                 .from("newsCheckChannelReject")
+                .filter((MessageSelector) message -> message.getHeaders().get(rejectReasonHeader).equals("META_DUPLICATION"))
                 .handle(m -> logger.info("Reject Message:\n{}\nReason: {}{}",
                                 m,
                                 m.getHeaders().get(rejectReasonHeader),
-                                m.getHeaders().get(rejectExplainHeader) == null ? "" : String.format("%nExplain: %s", m.getHeaders().get(rejectExplainHeader))
+                                m.getHeaders().get(rejectExplainHeader) == null ? "" : MessageFormat.format("\nExplain: {0}", m.getHeaders().get(rejectExplainHeader))
                         )
                 )
                 .get();

@@ -6,9 +6,9 @@ import com.fbytes.llmka.model.config.newssource.RssNewsSource;
 import com.fbytes.llmka.service.DataRetriver.IDataRetriever;
 import com.fbytes.llmka.service.DataRetriver.impl.DataRetrieverRSS;
 import com.fbytes.llmka.service.Embedding.IEmbeddingService;
-import com.fbytes.llmka.service.Embedding.impl.EmbeddingService;
+import com.fbytes.llmka.service.Embedding.EmbeddingService;
 import com.fbytes.llmka.service.EmbeddedStore.IEmbeddedStoreService;
-import com.fbytes.llmka.service.EmbeddedStore.impl.EmbeddedStoreService;
+import com.fbytes.llmka.service.EmbeddedStore.EmbeddedStoreService;
 import config.TestConfig;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.rag.content.Content;
@@ -43,7 +43,7 @@ class FullFlowTest {
     private RssNewsSource rssDataSource = new RssNewsSource("DatasourceID", "RssRetriver", rssUrl, "GroupName");
 
     @Test
-    public void flowTest() {
+    void flowTest() {
         Optional<Stream<NewsData>> dataStream = rssRetriever.retrieveData(rssDataSource);
         dataStream.ifPresent(list -> list.forEach(newsData -> {
                     EmbeddedData embeddings = embeddingService.embedNewsData(newsData);

@@ -12,10 +12,12 @@ spring:
   application:
     name: LLMka
   main:
-    banner-mode: "console" # Disable the startup banner    console/log/off
+    banner-mode: "console" # Disable the startup banner: console/log/off
 
 
 management:
+#  server:
+#    port: 8081
   endpoints:
     web.exposure.include: "*"  # health, metrics, traces, prometheus
     health:
@@ -29,7 +31,7 @@ management:
   tracing:
     enabled: true
     sampling:
-      probability: 1.0 # Sample 100% of requests
+      probability: 0.5 # Sample 50% of requests
   zipkin:
     enabled: true
     tracing:
@@ -51,11 +53,16 @@ logging:
     com.fbytes.LLMka: DEBUG
 
 llmka:
+  newssource_header: "NewsSourceID"
+  newsdata_header: "NewsDataID"
+  threads:
+    poller_prefix: "poller-"
   newssource:
     config_folder: ${secret.datasource.config_folder}
   config:
     ignore_invalid_config: true
     mappings_file: "${secret.config.mappings_file}"
+    newsgroups_file: "${secret.config.newsgroups_file}"
   embedding:
     model_path: ${secret.embedding.model_path}
     tokenizer_path: ${secret.embedding.tokenizer_path}
@@ -73,24 +80,45 @@ llmka:
     ollama_onprem:
       model_name: ${secret.llm_provider.ollama_onprem.model_name}
       base_url: ${secret.llm_provider.ollama_onprem.base_url}
-      timeout: PT2m
+      timeout: PT5m
   brief:
     llm_provider: "LocalOllama"
-    description_size_limit: 200
+    description_size_limit: 300
     timeout: PT2m
     prompt:
       system: ${secret.brief.prompt.system}
       user: ${secret.brief.prompt.user}
+  lastsentence:
+    enabled: true
+    min_sentence_words_count: 5
+    llm_provider: "LocalOllama"
+    timeout: PT2m
+    iscomplete:
+      prompt:
+        system: ${secret.lastsentence.iscomplete.prompt.system}
+        user: ${secret.lastsentence.iscomplete.prompt.user}
+    hasfacts:
+      prompt:
+        system: ${secret.lastsentence.hasfacts.prompt.system}
+        user: ${secret.lastsentence.hasfacts.prompt.user}
+    rewrite:
+      prompt:
+        system: ${secret.lastsentence.rewrite.prompt.system}
+        user: ${secret.lastsentence.rewrite.prompt.user}
   newscheck:
     reject:
       reject_reason_header: "RejectReason"
       reject_explain_header: "RejectExplain"
     metacheck:
+      enabled: true
       metahash_size_limit: 2048
       metahash_size_core: 1024
+      schema_bean_prefix: "newsCheckMetaSchema"
     datacheck:
-      score_limit: 0.87
+      enabled: true
+      score_limit: 0.81
     adcheck:
+      enabled: false
       llm_provider: "LocalOllama"
       timeout: PT2m
       prompt:
@@ -101,15 +129,19 @@ llmka:
     config_file: ${secret.telegram.config_file}
     default_queue_size: 200
     telegram:
+      rate_per_sec: 0.03
       poll_delay: 30
       bot:
         botparams:
+          aigestsupportbot:
+            tgChannel: "${secret.telegram.bot.aigestsupportbot.tgChannel}"
+            token: "${secret.telegram.bot.aigestsupportbot.token}"
           israeldigestrusbot:
             tgChannel: "${secret.telegram.bot.israeldigestrusbot.tgChannel}"
             token: "${secret.telegram.bot.israeldigestrusbot.token}"
           aigestbot:
             tgChannel: "${secret.telegram.bot.aigestbot.tgChannel}"
             token: "${secret.telegram.bot.aigestbot.token}"
-          israeldigestengbot:
-            tgChannel: "${secret.telegram.bot.israeldigestengbot.tgChannel}"
-            token: "${secret.telegram.bot.israeldigestengbot.token}"
+          israeldigestbot:
+            tgChannel: "${secret.telegram.bot.israeldigestbot.tgChannel}"
+            token: "${secret.telegram.bot.israeldigestbot.token}"

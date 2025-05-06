@@ -1,0 +1,24 @@
+
+management:
+  endpoints:
+    web.exposure.include: "*"  # health, metrics, traces, prometheus
+    health:
+      show-details: always
+      show-components: always
+  metrics:
+    export:
+      prometheus:
+        exemplars:
+          enabled: true
+  tracing:
+    enabled: true
+    sampling:
+      probability: 0.5 # Sample 50% of requests
+  zipkin:
+    enabled: true
+    tracing:
+      endpoint: ${secret.tracing.zipkin.endpoint}
+  prometheus:
+    export:
+      enabled: true
+      histogram: true

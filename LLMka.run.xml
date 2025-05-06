@@ -3,10 +3,10 @@
     <option name="MAIN_CLASS_NAME" value="com.fbytes.llmka.LLMka" />
     <module name="LLMka" />
     <option name="PROGRAM_PARAMETERS" value="--spring.config.location=$PROJECT_DIR$/src/main/resources/ --spring.profiles.active=dev,metrics" />
-    <option name="VM_PARAMETERS" value="-Dlogging.config=$PROJECT_DIR$/src/main/resources/log4j2.xml" />
+    <option name="VM_PARAMETERS" value="-Dlogging.config=$PROJECT_DIR$/src/main/resources/log4j2.xml -XX:+EnableDynamicAgentLoading" />
     <extension name="coverage">
       <pattern>
-        <option name="PATTERN" value="com.fbytes.llmka.integration.config.*" />
+        <option name="PATTERN" value="com.fbytes.llmka.config.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>

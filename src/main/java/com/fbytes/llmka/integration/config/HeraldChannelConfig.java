@@ -1,18 +1,22 @@
 package com.fbytes.llmka.integration.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fbytes.llmka.integration.service.HeraldConfigService;
-import com.fbytes.llmka.model.config.Mapping;
+import com.fbytes.llmka.integration.service.IHeraldFactory;
+import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.NewsData;
-import com.fbytes.llmka.model.config.heraldchannel.Herald;
-import com.fbytes.llmka.model.config.heraldchannel.HeraldTelegram;
+import com.fbytes.llmka.model.config.HeraldsConfiguration;
+import com.fbytes.llmka.model.config.Mapping;
+import com.fbytes.llmka.model.config.heraldchannel.HeraldConfig;
+import com.fbytes.llmka.model.config.heraldchannel.HeraldConfigTelegram;
+import com.fbytes.llmka.model.heraldmessage.HeraldMessage;
 import com.fbytes.llmka.model.heraldmessage.TelegramMessage;
-import com.fbytes.llmka.service.Herald.IHeraldService;
-import com.fbytes.llmka.service.Herald.impl.HeraldServiceTelegram;
+import com.fbytes.llmka.service.Herald.Herald;
+import com.fbytes.llmka.service.Herald.IHerald;
+import com.fbytes.llmka.service.Herald.IHeraldNameService;
 import io.micrometer.core.instrument.MeterRegistry;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
@@ -20,6 +24,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.integration.channel.PublishSubscribeChannel;
 import org.springframework.integration.channel.QueueChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
@@ -28,6 +33,9 @@ import org.springframework.integration.handler.BridgeHandler;
 import org.springframework.integration.router.HeaderValueRouter;
 import org.springframework.integration.scheduling.PollerMetadata;
 import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.PollableChannel;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -40,6 +48,7 @@ import java.util.stream.Stream;
 
 @Component
 public class HeraldChannelConfig implements ApplicationListener<ContextRefreshedEvent> {
+    private static final Logger logger = Logger.getLogger(HeraldChannelConfig.class);
     private static final ObjectMapper mapper = new ObjectMapper();
 
     @Value("${llmka.herald.news_group_header}")
@@ -48,17 +57,22 @@ public class HeraldChannelConfig implements ApplicationListener<ContextRefreshed
     private Integer defaultQueueSize;
     @Value("${llmka.config.mappings_file}")
     private String mappingConfigFile;
+    @Value("${llmka.threads.poller_prefix}")
+    private String pollerPrefix;
 
     @Autowired
     private IntegrationFlowContext flowContext;
     @Autowired
     private MessageChannel heraldChannel;
     @Autowired
-    private HeraldConfigService heraldConfigService;
+    private HeraldsConfiguration heraldsConfiguration;
     @Autowired
-    private PollerMetadata telegramPoller;
+    private IHeraldFactory heraldFactory;
     @Autowired
     private MeterRegistry meterRegistry;
+    @Autowired
+    @Qualifier("pubsubExecutor")
+    private TaskExecutor pubsubExecutor;
 
     private final GenericApplicationContext applicationContext;
 
@@ -70,48 +84,45 @@ public class HeraldChannelConfig implements ApplicationListener<ContextRefreshed
     private void createOutputChannels(Mapping[] mappings, ConfigurableApplicationContext context) {
         // create pub-sub channel for each unique "outputChannel" in mappings
         Set<String> outputChannels = Arrays.stream(mappings).map(mapping -> mapping.getOutputChannel()).collect(Collectors.toSet());
+        logger.debug("Creating output channels: {}", outputChannels.size());
         outputChannels.forEach(channelName -> {
-            PublishSubscribeChannel channel = new PublishSubscribeChannel();
+            PublishSubscribeChannel channel = new PublishSubscribeChannel(pubsubExecutor);
+            channel.setDatatypes(NewsData.class);
             channel.setBeanName(channelName);
+            //applicationContext.registerBean(channelName, PublishSubscribeChannel.class, () -> channel);
             context.getBeanFactory().registerSingleton(channelName, channel);
+            logger.debug("Created output channel: {}", channelName);
         });
     }
 
-    private Map<String, List<Pair<String, IHeraldService>>> createHeraldServices() {
+    private Map<String, List<Pair<String, IHerald>>> createHeraldServices() {
         DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) applicationContext.getAutowireCapableBeanFactory();
 
         // TODO: Make generic for other heralds
         // create herald services
-        Map<String, List<Pair<String, IHeraldService>>> outchannelToHeraldServiceMap = new HashMap<>(); // <outputChannel, <HeraldBeanName, IHeraldService>>
-        for (Herald herald : heraldConfigService.getHeralds()) {
-            if (!(herald instanceof HeraldTelegram)) {
+        Map<String, List<Pair<String, IHerald>>> outchannelToHeraldServiceMap = new HashMap<>(); // <outputChannel, <HeraldBeanName, IHeraldService>>
+        logger.debug("Creating herald services: {}", heraldsConfiguration.getHeraldConfigs().length);
+        for (HeraldConfig heraldConfig : heraldsConfiguration.getHeraldConfigs()) {
+            logger.debug("Creating herald service for channel: {}", heraldConfig.getChannel());
+            if (!(heraldConfig instanceof HeraldConfigTelegram)) {
                 throw new RuntimeException("Invalid configuration");
             }
-            HeraldServiceTelegram newHeraldService = new HeraldServiceTelegram((HeraldTelegram) herald);   // replace with factory?
-            beanFactory.autowireBean(newHeraldService);
-            String beanName = StringUtils.capitalize(herald.getType().toLowerCase()) + "-" + herald.getName();
-            beanFactory.initializeBean(newHeraldService, beanName);
-            beanFactory.registerSingleton(beanName, newHeraldService);
-            Pair<String, IHeraldService> newHeraldPair = Pair.of(beanName, newHeraldService);
-            if (outchannelToHeraldServiceMap.containsKey(herald.getChannel())) {
-                outchannelToHeraldServiceMap.get(herald.getChannel()).add(newHeraldPair);
-            } else {
-                List<Pair<String, IHeraldService>> heraldServiceList = new ArrayList<>();
-                heraldServiceList.add(newHeraldPair);
-                outchannelToHeraldServiceMap.put(herald.getChannel(), heraldServiceList);
-            }
+            Herald<HeraldMessage> createdHwraldService = heraldFactory.createHeraldService(heraldConfig);
+            Pair<String, IHerald> newHeraldPair = Pair.of(IHeraldNameService.makeFullName(heraldConfig), createdHwraldService);
 
+            outchannelToHeraldServiceMap.computeIfAbsent(heraldConfig.getChannel(), key -> new ArrayList<>())
+                    .add(newHeraldPair);
 
-            QueueChannel queueChannel = new QueueChannel(defaultQueueSize);
-            applicationContext.registerBean(heraldQueueName(beanName), QueueChannel.class, () -> queueChannel);
+            MessageChannel heraldChannel = new QueueChannel();
+            applicationContext.registerBean(heraldQueueName(IHeraldNameService.makeFullName(heraldConfig)), MessageChannel.class, () -> heraldChannel);
 
             // TODO: Add captor
             //queueChannel.registerMetricsCaptor(new MicrometerMetricsCaptor(meterRegistry));
 
             BridgeHandler bridgeHandler = new BridgeHandler();
-            bridgeHandler.setOutputChannel(queueChannel);
+            bridgeHandler.setOutputChannel(heraldChannel);
 
-            PublishSubscribeChannel outChannel = ((PublishSubscribeChannel) beanFactory.getBean(herald.getChannel()));
+            PublishSubscribeChannel outChannel = ((PublishSubscribeChannel) beanFactory.getBean(heraldConfig.getChannel()));
             outChannel.subscribe(bridgeHandler);
         }
         return outchannelToHeraldServiceMap;
@@ -133,25 +144,25 @@ public class HeraldChannelConfig implements ApplicationListener<ContextRefreshed
         }
 
         createOutputChannels(mappings, context);
-        Map<String, List<Pair<String, IHeraldService>>> outchannelToHeraldServiceMap = createHeraldServices();
+        Map<String, List<Pair<String, IHerald>>> outchannelToHeraldServiceMap = createHeraldServices();
 
         // bind heralds to corresponding output channels
         outchannelToHeraldServiceMap.entrySet().forEach(entry -> {
-            //PublishSubscribeChannel outChannel = ((PublishSubscribeChannel) beanFactory.getBean(entry.getKey()));
             entry.getValue().forEach(heraldNameService -> {
                 String heraldQName = heraldQueueName(heraldNameService.getLeft());
-                QueueChannel heraldQueueChannel = ((QueueChannel) beanFactory.getBean(heraldQName));
+                PollableChannel heraldQueueChannel = ((PollableChannel) beanFactory.getBean(heraldQName));
 
                 IntegrationFlow heraldQFlow = IntegrationFlow
                         .from(heraldQueueChannel)
                         .handle(message -> {
                                     try {
                                         heraldNameService.getRight().sendMessage(TelegramMessage.fromNewsData((NewsData) message.getPayload()));
-                                    } catch (IHeraldService.SendMessageException e) {
-                                        heraldQueueChannel.send(message);
+                                    } catch (IHerald.SendMessageException e) {
+                                        heraldQueueChannel.send(message);   // requeue
                                     }
                                 },
-                                e -> e.poller(telegramPoller))
+                                e -> e.poller(singleThreadPoller(heraldNameService.getLeft()))
+                        )
                         .get();
                 beanFactory.registerSingleton(heraldQName + "-Flow", heraldQFlow);
                 flowContext.registration(heraldQFlow).register();
@@ -167,18 +178,26 @@ public class HeraldChannelConfig implements ApplicationListener<ContextRefreshed
 
         IntegrationFlow heraldFlow = IntegrationFlow
                 .from(heraldChannel)
-//                .<EmbeddedData, String>transform(embeddedData -> String.format("*%s* %s\t([%s](%s))",
-//                        embeddedData.getNewsData().getTitle(),
-//                        embeddedData.getNewsData().getDescription().orElse(""),
-//                        embeddedData.getNewsData().getDataSourceName(),
-//                        embeddedData.getNewsData().getLink()))
                 .route(router)
                 .get();
-        beanFactory.registerSingleton("heraldFlow", heraldFlow);
+        beanFactory.registerSingleton("heraldFlow", heraldFlow); // TODO - replace with application.context
         flowContext.registration(heraldFlow).register();
     }
 
     private String heraldQueueName(String heraldBeanName) {
         return heraldBeanName + "-Q";
+    }
+
+    public PollerMetadata singleThreadPoller(String pollerName) {
+        PollerMetadata poller = new PollerMetadata();
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(1);
+        executor.setMaxPoolSize(1);
+        executor.setThreadNamePrefix(pollerPrefix + pollerName + "-");
+        executor.initialize();
+        poller.setTaskExecutor(executor);
+        poller.setTrigger(new PeriodicTrigger(1000));
+        //poller.setSendTimeout(5000);
+        return poller;
     }
 }
