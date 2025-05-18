@@ -4,6 +4,7 @@ import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.NewsData;
 import com.fbytes.llmka.model.config.newssource.NewsSource;
 import com.fbytes.llmka.service.DataRetriver.IDataRetriever;
+import io.micrometer.core.annotation.Timed;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -21,6 +22,7 @@ public class DataRetrieveService implements IDataRetrieveService {
     @Autowired
     private Map<String, IDataRetriever> retrieverMap;
 
+    @Timed(value = "llmka.dataretrive.time", description = "time to retrieve data from newsSource", percentiles = {0.5, 0.9})
     public Optional<Stream<NewsData>> retrieveData(NewsSource newsSource) throws NoSuchRetrieverException {
         IDataRetriever dataRetriever = retrieverMap.get("dataRetriever" + StringUtils.capitalize(newsSource.getType()));
         if (dataRetriever == null) {

@@ -31,7 +31,7 @@ import java.util.Optional;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Stream;
 
-@SpringBootTest //(classes = {embeddingService.class})
+@SpringBootTest
 @ContextConfiguration(classes = {StepProcessNewsSource.class, ChannelsConfig.class, DataRetrieveService.class, StepProcessNewsSourceTest.TestConfig.class})
 class StepProcessNewsSourceTest {
     private static final Logger logger = Logger.getLogger(StepProcessNewsSourceTest.class);

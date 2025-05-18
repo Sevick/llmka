@@ -29,7 +29,8 @@ class NewsCheckDataTest {
     @Test
     void newsCheckDataDuplicationTest() {
         NewsData newsData = NewsData.builder()
-                .id("ID1")
+                .id("intID1")
+                .extID("extID1")
                 .dataSourceID("DataSourceID")
                 .link("http://somelink")
                 .title("Title")

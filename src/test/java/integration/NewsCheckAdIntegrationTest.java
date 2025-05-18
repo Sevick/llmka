@@ -7,22 +7,18 @@ import com.fbytes.llmka.service.NewsCheck.INewsCheck;
 import com.fbytes.llmka.service.NewsCheck.impl.NewsCheckAd;
 import config.TestConfig;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.EnabledIf;
 import org.springframework.util.Assert;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-@ActiveProfiles("integration")
+@EnabledIf(expression = "#{environment.acceptsProfiles('integration')}", reason = "Runs only for integration profile")
 @SpringBootTest(classes = {LLMProviderLocalOllama.class, LLMService.class, NewsCheckAd.class})
 @ContextConfiguration(classes = {TestConfig.class})
 class NewsCheckAdIntegrationTest {
@@ -32,7 +28,7 @@ class NewsCheckAdIntegrationTest {
 
     @ParameterizedTest
     @MethodSource("nonAdProvider")
-    void testCheckAd_nonAd(Pair<String, String>  input) {
+    void testCheckAd_nonAd(Pair<String, String> input) {
         NewsData newsData1 = NewsData.builder()
                 .id("1")
                 .link("http://1")
@@ -58,7 +54,7 @@ class NewsCheckAdIntegrationTest {
 
     @ParameterizedTest
     @MethodSource("adProvider")
-    void testCheckAd_ad(Pair<String, String>  input) {
+    void testCheckAd_ad(Pair<String, String> input) {
         NewsData newsData1 = NewsData.builder()
                 .id("1")
                 .link("http://1")

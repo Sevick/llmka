@@ -3,8 +3,8 @@ package unit;
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.NewsData;
 import com.fbytes.llmka.model.appevent.AppEvent;
-import com.fbytes.llmka.model.appevent.AppEventMethashCompress;
-import com.fbytes.llmka.service.AppEventService.IAppEventSenderService;
+import com.fbytes.llmka.model.appevent.AppEventMetahashCompress;
+import com.fbytes.llmka.service.Maintenance.AppEventSenderService.IAppEventSenderService;
 import com.fbytes.llmka.service.NewsCheck.INewsCheck;
 import com.fbytes.llmka.service.NewsCheck.impl.NewsCheckMetaSchema;
 import config.TestConfig;
@@ -75,7 +75,7 @@ class NewsCheckMetaSchemaTest {
         try {
             metaHash = NewsCheckMetaSchema.class.getDeclaredField("metaHash");
             metaHash.setAccessible(true);
-            method = newsCheckMetaSchema.getClass().getDeclaredMethod("compressMetaHash", int.class);
+            method = newsCheckMetaSchema.getClass().getDeclaredMethod("compressMetaHash", Integer.class);
             method.setAccessible(true);
 
             metaHash.set(newsCheckMetaSchema, testMetaHash);
@@ -98,7 +98,7 @@ class NewsCheckMetaSchemaTest {
         Set<String> restIds = newHashMap.values().stream().map(item -> item.getRight()).collect(Collectors.toSet());
         removedIDs.forEach(id -> Assert.isTrue(!restIds.contains(id), "ID from removeID list found in new map: " + id));
 
-        verify(appEventSenderSpringIntegration, times(1)).sendEvent(any(AppEventMethashCompress.class));
+        verify(appEventSenderSpringIntegration, times(1)).sendEvent(any(AppEventMetahashCompress.class));
     }
 
 

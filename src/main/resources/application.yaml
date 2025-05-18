@@ -4,6 +4,10 @@ server:
     include-message: always
     whitelabel:
       enabled: false
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/plain
+    min-response-size: 1024
 
 spring:
   config:
@@ -53,11 +57,16 @@ logging:
     com.fbytes.LLMka: DEBUG
 
 llmka:
-  newssource_header: "NewsSourceID"
-  newsdata_header: "NewsDataID"
+  shutdown_delay_msec: 30000
+  newssource_header: "NEWS_SOURCE_ID"
+  newsdata_header: "NEWS_DATA_ID"
+  maintenance:
+    news_group: "Maintenance"
   threads:
     poller_prefix: "poller-"
   newssource:
+    poll_interval: PT1m
+    poll_delay: PT30s
     config_folder: ${secret.datasource.config_folder}
   config:
     ignore_invalid_config: true
@@ -80,10 +89,10 @@ llmka:
     ollama_onprem:
       model_name: ${secret.llm_provider.ollama_onprem.model_name}
       base_url: ${secret.llm_provider.ollama_onprem.base_url}
-      timeout: PT5m
+      timeout: PT6m
   brief:
     llm_provider: "LocalOllama"
-    description_size_limit: 300
+    description_size_limit: 200
     timeout: PT2m
     prompt:
       system: ${secret.brief.prompt.system}
@@ -128,9 +137,10 @@ llmka:
     news_group_header: "newsGroupHeader"
     config_file: ${secret.telegram.config_file}
     default_queue_size: 200
+    silence: false
     telegram:
       rate_per_sec: 0.03
-      poll_delay: 30
+      poll_delay: PT10s
       bot:
         botparams:
           aigestsupportbot:

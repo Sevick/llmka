@@ -1,7 +1,8 @@
 package com.fbytes.llmka.integration.steps;
 
 import com.fbytes.llmka.model.NewsData;
-import com.fbytes.llmka.service.NewsProcessor.impl.NewsProcessorLastSentence;
+import com.fbytes.llmka.service.NewsProcessor.INewsProcessor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.channel.DirectChannel;
@@ -25,7 +26,7 @@ public class StepLastSentence {
 
 
     @Bean
-    public org.springframework.integration.dsl.IntegrationFlow lastSentencefFlow(NewsProcessorLastSentence lastSentenceProcessor) {
+    public org.springframework.integration.dsl.IntegrationFlow lastSentencefFlow(@Qualifier("NewsProcessorLastSentence") INewsProcessor lastSentenceProcessor) {
         return org.springframework.integration.dsl.IntegrationFlow.from("lastSentenceChannel")
                 .handle(lastSentenceProcessor, "process")
                 .channel("lastSentenceChannelOut")

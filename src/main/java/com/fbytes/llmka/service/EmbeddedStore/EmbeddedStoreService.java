@@ -1,8 +1,8 @@
 package com.fbytes.llmka.service.EmbeddedStore;
 
 import com.fbytes.llmka.logger.Logger;
-import com.fbytes.llmka.service.EmbeddedStore.dao.IEmbeddedStore;
 import com.fbytes.llmka.service.EmbeddedStore.dao.EmbeddedStore;
+import com.fbytes.llmka.service.EmbeddedStore.dao.IEmbeddedStore;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.rag.content.Content;
@@ -26,12 +26,12 @@ public class EmbeddedStoreService implements IEmbeddedStoreService {
     @Autowired
     private GenericApplicationContext applicationContext;
 
-    private ConcurrentMap<String, IEmbeddedStore> embeddedStoreMap = new ConcurrentHashMap<>(); // <schema, store>
+    private final ConcurrentMap<String, IEmbeddedStore> embeddedStoreMap = new ConcurrentHashMap<>(); // <schema, store>
 
 
     @PreDestroy
     private void onShutdown() {
-        embeddedStoreMap.entrySet().forEach(entry -> entry.getValue().save());
+        embeddedStoreMap.forEach((key, value) -> value.save());
     }
 
 
@@ -46,7 +46,7 @@ public class EmbeddedStoreService implements IEmbeddedStoreService {
     }
 
     @Override
-    @Timed(value = "llmka.embeddedstoreservice.store_time", description = "time to store")
+    @Timed(value = "llmka.embeddedstoreservice.store_time", description = "time to store", percentiles = {0.5, 0.9})
     public void store(String schema, List<TextSegment> segments, List<Embedding> embeddings) {
         createSchemaStore(schema).store(segments, embeddings);
     }
@@ -63,14 +63,14 @@ public class EmbeddedStoreService implements IEmbeddedStoreService {
 
 
     @Override
-    @Timed(value = "llmka.embeddedstoreservice.retrieve_time", description = "time to retrieve similar items for single query")
+    @Timed(value = "llmka.embeddedstoreservice.retrieve_time", description = "time to retrieve similar items for single query", percentiles = {0.5, 0.9})
     public Optional<List<Content>> retrieve(String schema, Embedding embeddedQuery, int maxResult, double minScoreLimit) {
         return createSchemaStore(schema).retrieve(embeddedQuery, maxResult, minScoreLimit);
     }
 
 
     @Override
-    @Timed(value = "llmka.embeddedstoreservice.retrieve_list_time", description = "time to retrieve similar items for the first of (list)")
+    @Timed(value = "llmka.embeddedstoreservice.retrieve_list_time", description = "time to retrieve similar items for the first of (list)", percentiles = {0.5, 0.9})
     public Optional<List<Content>> retrieve(String schema, List<Embedding> embeddings, int maxResult, double minScoreLimit) {
         for (Embedding embedding : embeddings) {
             Optional<List<Content>> contentList = retrieve(schema, embedding, maxResult, minScoreLimit);
@@ -87,7 +87,7 @@ public class EmbeddedStoreService implements IEmbeddedStoreService {
 
 
     @Override
-    @Timed(value = "llmka.embeddedstoreservice.check_and_store_time", description = "time spent on checkAndStore")
+    @Timed(value = "llmka.embeddedstoreservice.check_and_store_time", description = "time spent on checkAndStore", percentiles = {0.5, 0.9})
     public Optional<List<Content>> checkAndStore(String schema, List<TextSegment> segments, List<Embedding> embeddingList, double minScoreLimit) {
         return createSchemaStore(schema).checkAndStore(segments, embeddingList, minScoreLimit);
     }

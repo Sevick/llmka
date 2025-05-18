@@ -2,42 +2,41 @@ package integration;
 
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.NewsData;
-import com.fbytes.llmka.service.DataRetriver.ParserRSS.ParserRSS;
 import com.fbytes.llmka.service.LLMProvider.impl.LLMProviderLocalOllama;
 import com.fbytes.llmka.service.LLMService.LLMService;
-import com.fbytes.llmka.service.NewsCheck.INewsCheck;
 import com.fbytes.llmka.service.NewsProcessor.INewsProcessor;
 import com.fbytes.llmka.service.NewsProcessor.impl.NewsProcessorLastSentence;
 import config.TestConfig;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.EnabledIf;
 import org.springframework.util.Assert;
 
 import java.util.Optional;
 import java.util.stream.Stream;
 
-@Disabled
-@ActiveProfiles("integration")
-@SpringBootTest(classes = {LLMProviderLocalOllama.class, LLMService.class, NewsProcessorLastSentence.class, ParserRSS.class})
+import static org.junit.jupiter.api.Assertions.*;
+
+@EnabledIf(expression = "#{environment.acceptsProfiles('integration')}", reason = "Runs only for integration profile")
+@SpringBootTest(classes = {NewsProcessorLastSentence.class, LLMService.class, LLMProviderLocalOllama.class})
 @ContextConfiguration(classes = {TestConfig.class})
-public class LastSentenceTest {
+class LastSentenceTest {
     private static final Logger logger = Logger.getLogger(LastSentenceTest.class);
 
     @Autowired
     INewsProcessor lastSentenceProcessor;
 
     @ParameterizedTest
-    @MethodSource("newsDataProvider")
+    @MethodSource("tailCutProvider")
     void testLastSentence_cutTail(Pair<String, String> input) {
         NewsData newsData = NewsData.builder()
                 .id("LastSentenceTest#")
+                .extID("extID#")
                 .link("http://LastSentenceTest.somelink")
                 .title(input.getLeft())
                 .description(Optional.of(input.getRight()))
@@ -46,47 +45,50 @@ public class LastSentenceTest {
         logger.info("lastSentenceTest1: Last sentence result: {}", result);
         Assert.isTrue(!result.getDescription().isEmpty(), "New description is empty");
         Assert.isTrue(!result.getDescription().get().equals(newsData.getDescription().get()), "New description is equal old one");
-        Assert.isTrue(result.isRewritten(), "Rewritten flag is not set");
+        assertFalse(result.isRewritten(), "Rewritten flag is set incorrectly");
         //Assert.isTrue(newsData.getDescription().get().startsWith(result.getDescription().get()), "New description is not a part of old one");
     }
 
     // <String, String> - <title, description>
-    static Stream<Pair<String, String>> newsDataProvider() {
+    static Stream<Pair<String, String>> tailCutProvider() {
         return Stream.of(
+                Pair.of("Anduril is working on the difficult AI-related task of real-time edge computing.",
+                        "Anduril announced its ninth acquisition on Monday with the purchase of Dublin’s Klas, makers of ruggedized edge computing equipment for the military and first-responders. Anduril wouldn’t reveal financial details of the deal, and the purchase is subject to regulatory approval, but the company did say that Klas employs 150 people. Relatedly, on Monday, Anduril also"),
                 Pair.of("В Бат-Яме задержали мужчину с заряженным пистолетом.",
-                        "Полиция сообщила, что в рамках борьбы с криминалом в Бат-Яме был задержан мужчина (21) с заряженным пистолетом калибра 9 мм. Оперативники из ")
+                        "Полиция сообщила, что в рамках борьбы с криминалом в Бат-Яме был задержан мужчина (21) с заряженным пистолетом калибра 9 мм. Оперативники из "),
+                Pair.of("Палестинский поэт получил «Пулитцера» за эссе о Газе.",
+                        "Поэт и основатель первой англоязычной библиотеки в Газе Мусаб Абу Тоха был удостоен Пулитцеровской премии за публицистические эссе. В них он ")
         );
     }
 
 
-    @Test
-    void lastSentenceTest2() {
-        NewsData newsData = NewsData.builder()
-                .id("lastSentenceTest2")
-                .link("http://dddd.llll.zz")
-                .title("В Бат-Яме задержали мужчину с заряженным пистолетом.")
-                .description(Optional.of("Оперативники из "))
-                .build();
-
-        NewsData result = lastSentenceProcessor.process(newsData);
-        logger.info("lastSentenceTest2: Last sentence result: {}", result);
-        Assert.isTrue(result.getDescription().isEmpty(), "Meaningless last sentence was not removed");
-    }
-
-
-    @Test
-    void lastSentenceTest3() {
+    @ParameterizedTest
+    @MethodSource("tailRemoveProvider")
+    void lastSentence_tailRemoval(Pair<String, String> input) {
         NewsData newsData = NewsData.builder()
                 .id("lastSentenceTest3")
                 .link("http://dddd.llll.zz")
-                .title("Спецпосланник Бёлер: Боевые действия в Газе прекратятся с возвращением всех заложников.")
-                .description(Optional.of("Адам Бёлер, недавно назначенный президентом США Дональдом Трампом специальным посланником по реагированию на захват заложников, заявил"))
+                .title(input.getLeft())
+                .description(Optional.of(input.getRight()))
                 .build();
 
         NewsData result = lastSentenceProcessor.process(newsData);
-        logger.info("lastSentenceTest3: Last sentence result: {}", result);
-        Assert.isTrue(result.getDescription().isEmpty(), "Meaningless last sentence was not removed");
+        logger.info("lastSentence_tailRemoval: Last sentence result: {}", result);
+        assertTrue(result.getDescription().isEmpty(), "Meaningless last sentence was not removed");
+        assertFalse(result.isRewritten(), "Rewritten flag is set, while content was not changed");
     }
+
+
+    // <String, String> - <title, description>
+    static Stream<Pair<String, String>> tailRemoveProvider() {
+        return Stream.of(
+                Pair.of("Спецпосланник Бёлер: Боевые действия в Газе прекратятся с возвращением всех заложников.",
+                        "Адам Бёлер, недавно назначенный президентом США Дональдом Трампом специальным посланником по реагированию на захват заложников, заявил"),
+                Pair.of("В Бат-Яме задержали мужчину с заряженным пистолетом.",
+                        "Оперативники из ")
+        );
+    }
+
 
     @Test
     void lastSentenceTest4() {
@@ -99,9 +101,9 @@ public class LastSentenceTest {
 
         NewsData result = lastSentenceProcessor.process(newsData);
         logger.info("lastSentenceTest4: Last sentence result: {}", result);
-        Assert.isTrue(!result.getDescription().isEmpty(), "New description is empty");
-        Assert.isTrue(result.getDescription().get().equals(newsData.getDescription().get()), "New description is not equal old one");
-        Assert.isTrue(!result.isRewritten(), "Rewritten flag is set, while content was not changed");
+        assertFalse(result.getDescription().isEmpty(), "New description is empty");
+        assertEquals(result.getDescription().get(), newsData.getDescription().get(), "New description is not equal old one");
+        assertFalse(result.isRewritten(), "Rewritten flag is set, while content was not changed");
     }
 
     @Test
@@ -115,7 +117,7 @@ public class LastSentenceTest {
 
         NewsData result = lastSentenceProcessor.process(newsData);
         logger.info("lastSentenceTest5: Last sentence result: {}", result);
-        Assert.isTrue(!result.getDescription().isEmpty(), "New description is empty");
+        assertTrue(!result.getDescription().isEmpty(), "New description is empty");
     }
 
     @Test
@@ -129,7 +131,7 @@ public class LastSentenceTest {
 
         NewsData result = lastSentenceProcessor.process(newsData);
         logger.info("lastSentenceTest6: Last sentence result: {}", result);
-        Assert.isTrue(!result.getDescription().isEmpty(), "New description is empty");
+        assertTrue(!result.getDescription().isEmpty(), "New description is empty");
     }
 
     @Test
@@ -143,36 +145,7 @@ public class LastSentenceTest {
 
         NewsData result = lastSentenceProcessor.process(newsData);
         logger.info("lastSentenceTest7: Last sentence result: {}", result);
-        Assert.isTrue(!result.getDescription().isEmpty(), "New description is empty");
+        assertTrue(!result.getDescription().isEmpty(), "New description is empty");
     }
 
-    @Test
-    void lastSentenceTest8() {
-        NewsData newsData = NewsData.builder()
-                .id("lastSentenceTest8")
-                .link("http://dddd.llll.zz")
-                .title("Anduril is working on the difficult AI-related task of real-time edge computing.")
-                .description(Optional.of("Anduril announced its ninth acquisition on Monday with the purchase of Dublin’s Klas, makers of ruggedized edge computing equipment for the military and first-responders. Anduril wouldn’t reveal financial details of the deal, and the purchase is subject to regulatory approval, but the company did say that Klas employs 150 people. Relatedly, on Monday, Anduril also"))
-                .build();
-
-        NewsData result = lastSentenceProcessor.process(newsData);
-        logger.info("lastSentenceTest8: Last sentence result: {}", result);
-        Assert.isTrue(!result.getDescription().isEmpty(), "New description is empty");
-        Assert.isTrue(result.getDescription().get().equals("Anduril announced its ninth acquisition on Monday with the purchase of Dublin’s Klas, makers of ruggedized edge computing equipment for the military and first-responders. Anduril wouldn’t reveal financial details of the deal, and the purchase is subject to regulatory approval, but the company did say that Klas employs 150 people."), "LastSentece failed to cut last useless sentence: " + result.getDescription().get());
-    }
-
-    @Test
-    void lastSentenceTest9() {
-        NewsData newsData = NewsData.builder()
-                .id("lastSentenceTest9")
-                .link("http://dddd.llll.zz")
-                .title("Палестинский поэт получил «Пулитцера» за эссе о Газе.")
-                .description(Optional.of("Поэт и основатель первой англоязычной библиотеки в Газе Мусаб Абу Тоха был удостоен Пулитцеровской премии за публицистические эссе. В них он "))
-                .build();
-
-        NewsData result = lastSentenceProcessor.process(newsData);
-        logger.info("lastSentenceTest9: Last sentence result: {}", result);
-        Assert.isTrue(!result.getDescription().isEmpty(), "New description is empty");
-        Assert.isTrue(result.getDescription().get().equals("Поэт и основатель первой англоязычной библиотеки в Газе Мусаб Абу Тоха был удостоен Пулитцеровской премии за публицистические эссе."), "LastSentece failed to cut last useless sentence: " + result.getDescription().get());
-    }
 }

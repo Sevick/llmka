@@ -1,13 +1,15 @@
 package com.fbytes.llmka.model.appevent;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.experimental.SuperBuilder;
 
 @Data
 @SuperBuilder
-public class AppEventMethashCompress extends AppEvent {
+@EqualsAndHashCode(callSuper=true)
+public class AppEventMetahashCompress extends AppEvent {
 
-    public AppEventMethashCompress(String srv, String schema) {
+    public AppEventMetahashCompress(String srv, String schema) {
         super(srv, schema, EventType.METAHASH_COMPRESS);
     }
 }

@@ -1,6 +1,6 @@
 package com.fbytes.llmka.integration.steps;
 
-import com.fbytes.llmka.integration.NewsCheckDataSelector;
+import com.fbytes.llmka.integration.steps.selector.NewsCheckDataSelector;
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.NewsData;
 import org.springframework.beans.factory.annotation.Qualifier;

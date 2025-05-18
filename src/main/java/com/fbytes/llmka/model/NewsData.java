@@ -12,6 +12,7 @@ import java.util.Optional;
 @Builder(toBuilder=true)
 public class NewsData implements Cloneable{
     private String id;
+    private String extID;
     private String dataSourceID;
     private String dataSourceName;
     private String link;

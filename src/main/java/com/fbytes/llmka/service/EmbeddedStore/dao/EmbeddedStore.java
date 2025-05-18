@@ -44,7 +44,7 @@ public class EmbeddedStore implements IEmbeddedStore {
     @Autowired(required = false)
     private MeterRegistry meterRegistry;
 
-    private final static ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+    private static final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     private InMemoryFastStore<TextSegment> embeddingStore = new InMemoryFastStore<>();
     private Instant lastStoreSave;
 
@@ -92,9 +92,13 @@ public class EmbeddedStore implements IEmbeddedStore {
     @Override
     @Timed(value = "llmka.embeddedstore.store_time", description = "time to check news for duplicates")
     public void store(List<TextSegment> segments, List<Embedding> embeddings) {
+        List<String> ids = segments.stream()
+                .map(textSegment -> textSegment.metadata().getString("id"))
+                .toList();
+
         try {
             readWriteLock.writeLock().lock();
-            embeddingStore.addAll(embeddings, segments);
+            embeddingStore.addAll(ids, embeddings, segments);
             if (Duration.between(lastStoreSave, Instant.now()).compareTo(saveInterval) > 0) {
                 lastStoreSave = Instant.now();
                 save();
@@ -121,11 +125,15 @@ public class EmbeddedStore implements IEmbeddedStore {
     @Override
     public void removeOtherIDes(Collection<String> idList) {
         logger.debug("[{}] Cleaning up store. Entries to keep: {}", storeName, idList.size());
-        Set<String> idsToLeave = new HashSet<String>(embeddingStore.fetchAllIDes());
-        idsToLeave.removeAll(idList);
-        embeddingStore.removeAll(idsToLeave);
+        Set<String> idsToRemove = new HashSet<String>(embeddingStore.fetchAllIDes());
+        if (idsToRemove.isEmpty()) {
+            logger.debug("[{}] There is nothing to cleanup. Entries left: {}", storeName, idList.size());
+            return;
+        }
+        idsToRemove.removeAll(idList);
+        embeddingStore.removeAll(idsToRemove);
         save();
-        logger.debug("[{}] Store cleaned up. Entries left: {}", storeName, idList.size());
+        logger.info("[{}] Store cleaned up. Entries left: {}", storeName, idList.size());
     }
 
 
@@ -192,8 +200,8 @@ public class EmbeddedStore implements IEmbeddedStore {
     }
 
     @Override
-    public void cleanStorage() {
-        (new File(storeFilePath)).delete();
+    public boolean removeStorage() {
+        boolean result = (new File(storeFilePath)).delete();
     }
 
     private void restore(String storeFilePath) {
@@ -211,7 +219,7 @@ public class EmbeddedStore implements IEmbeddedStore {
         try {
             Field storeEntriesField = embeddingStore.getClass().getDeclaredField("entries");
             storeEntriesField.setAccessible(true);
-            ConcurrentHashMap<?,?> fieldValue = (ConcurrentHashMap<?,?>) storeEntriesField.get(embeddingStore);
+            ConcurrentHashMap<?, ?> fieldValue = (ConcurrentHashMap<?, ?>) storeEntriesField.get(embeddingStore);
             //storeEntriesField.setAccessible(false);
             if (fieldValue != null)
                 return fieldValue.size();

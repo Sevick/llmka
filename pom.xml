@@ -12,13 +12,32 @@
     </parent>
     <groupId>com.fbytes</groupId>
     <artifactId>LLMka</artifactId>
-    <version>0.9</version>
+    <version>0.92</version>
 
     <properties>
         <maven.compiler.source>22</maven.compiler.source>
         <maven.compiler.target>22</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
+    <profiles>
+        <profile>
+            <id>integration</id>
+            <properties>
+                <environment.name>Integration Testing</environment.name>
+            </properties>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+        </profile>
+
+        <profile>
+            <id>production</id>
+            <properties>
+                <environment.name>Production</environment.name>
+            </properties>
+        </profile>
+    </profiles>
 
     <dependencies>
         <dependency>
@@ -41,6 +60,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
         <!-- Contains aspectj - required by TimedAspect -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

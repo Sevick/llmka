@@ -5,8 +5,6 @@ import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.NewsData;
 import com.fbytes.llmka.service.INewsIDStore;
 import com.fbytes.llmka.service.NewsCheck.INewsCheck;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.tracing.annotation.NewSpan;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,13 +30,8 @@ public class NewsCheckMeta implements INewsCheck, INewsIDStore {
     @Value("${llmka.newscheck.metacheck.schema_bean_prefix}")
     private String schemaBeanPrefix;
 
-
-
-
     @Autowired
-    private MeterRegistry meterRegistry;
-    @Autowired
-    GenericApplicationContext applicationContext;
+    GenericApplicationContext context;
 
     private final ConcurrentMap<String, NewsCheckMetaSchema> metaHash = new ConcurrentHashMap<>();   // <MD5, <seq#, id>>
 
@@ -48,16 +41,17 @@ public class NewsCheckMeta implements INewsCheck, INewsIDStore {
         if (!serviceEnabled)
             return Optional.empty();
         NewsCheckMetaSchema newsCheckMetaSchema = metaHash.computeIfAbsent(schema, str -> createSchemaMetaService(schema));
+        logger.debug("metaHash check");
         return newsCheckMetaSchema.checkNews(schema, newsData);
     }
 
     public NewsCheckMetaSchema createSchemaMetaService(String schema) {
         logger.debug("[{}] Creating NewsCheckMetaSchema", schema);
         String beanName = schemaBeanPrefix + schema;
-        applicationContext.registerBean(beanName, NewsCheckMetaSchema.class, () -> {
+        context.registerBean(beanName, NewsCheckMetaSchema.class, () -> {
             return new NewsCheckMetaSchema(schema);
         });
-        return (NewsCheckMetaSchema) applicationContext.getBean(beanName);
+        return (NewsCheckMetaSchema) context.getBean(beanName);
     }
 
     @Override

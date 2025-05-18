@@ -3,9 +3,7 @@ package com.fbytes.llmka.service.DataRetriver.ParserRSS;
 
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.NewsData;
-import com.fbytes.llmka.model.config.newssource.NewsSource;
 import com.fbytes.llmka.tools.TextUtil;
-import io.opentelemetry.instrumentation.annotations.SpanAttribute;
 import org.jsoup.Jsoup;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
@@ -19,13 +17,9 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Timestamp;
-import java.text.MessageFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class ParserRSS implements IParserRSS {
@@ -47,20 +41,20 @@ public class ParserRSS implements IParserRSS {
             if (itemNode.getNodeType() == Node.ELEMENT_NODE) {
                 Element itemElement = (Element) itemNode;
                 Optional<String> guid = Optional.ofNullable(itemElement.getElementsByTagName("guid").item(0))
-                        .map(item -> item.getTextContent());
+                        .map(Node::getTextContent);
                 guid = guid.or(() ->
                         Optional.ofNullable(itemElement.getElementsByTagName("id").item(0))
-                                .map(item -> item.getTextContent())
+                                .map(Node::getTextContent)
                 );
                 String title = itemElement.getElementsByTagName("title").item(0).getTextContent()
-                        .transform(txt -> cleanupString(txt));
+                        .transform(this::cleanupString);
                 String link = itemElement.getElementsByTagName("link").item(0).getTextContent();
                 Optional<String> description = Optional.ofNullable(itemElement.getElementsByTagName("description").item(0))
-                        .map(el -> parseElement(el));
+                        .map(this::parseElement);
                 Optional<String> fullText = Optional.ofNullable(itemElement.getElementsByTagName("full-text").item(0))
-                        .map(el -> parseElement(el));
+                        .map(this::parseElement);
                 Optional<String> content = Optional.ofNullable(itemElement.getElementsByTagName("content").item(0))
-                        .map(el -> parseElement(el));
+                        .map(this::parseElement);
 
                 if (description.isEmpty() || description.get().isEmpty()) {
                     description = fullText.or(() -> content);
@@ -72,7 +66,7 @@ public class ParserRSS implements IParserRSS {
                 Optional<Timestamp> pubDate;
                 try {
                     pubDate = Optional.ofNullable(itemElement.getElementsByTagName("pubDate").item(0))
-                            .map(item -> item.getTextContent())
+                            .map(Node::getTextContent)
                             .map(dateTxt -> {
                                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
                                 LocalDateTime localDateTime = LocalDateTime.parse(dateTxt, formatter);
@@ -82,9 +76,13 @@ public class ParserRSS implements IParserRSS {
                     pubDate = Optional.empty();
                 }
 
+                String id = UUID.randomUUID().toString();
+                logger.debug("Parsed RSS item: id: {}, extid: {}, Title: {}", id, extId, title);
+
                 result.add(
                         NewsData.builder()
-                                .id(extId)
+                                .id(id)
+                                .extID(extId)
                                 .link(link)
                                 .title(title)
                                 .description(description)
@@ -100,6 +98,7 @@ public class ParserRSS implements IParserRSS {
 
 
     private String cleanupString(String src) {
+        // TODO: Replace with precompiled pattern
         return src.trim().replaceAll("—", "-");
     }
 

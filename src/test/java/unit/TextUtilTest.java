@@ -4,14 +4,13 @@ import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.tools.TextUtil;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class TextUtilTest {
+class TextUtilTest {
     private static final Logger logger = Logger.getLogger(TextUtilTest.class);
 
     @Test
-    void extractYesNo_No() throws TextUtil.TextParsingException {
+    void extractYesNo_No1() throws TextUtil.TextParsingException {
         String src = "No.\n\nSome other text";
         boolean result = TextUtil.extractYesNo(src);
         assertEquals(false, result);
@@ -21,21 +20,29 @@ public class TextUtilTest {
     void extractYesNo_NO() throws TextUtil.TextParsingException {
         String src = "NO\n\nSome other text";
         boolean result = TextUtil.extractYesNo(src);
-        assertEquals(false, result);
+        assertFalse(result);
     }
 
     @Test
     void extractYesNo_Yes() throws TextUtil.TextParsingException {
         String src = "Yes.\n\nSome other text";
         boolean result = TextUtil.extractYesNo(src);
-        assertEquals(true, result);
+        assertTrue(result);
+    }
+
+
+    @Test
+    void extractYesNo_No2() throws TextUtil.TextParsingException {
+        String src = "**No.**\n";
+        boolean result = TextUtil.extractYesNo(src);
+        assertFalse(result);
     }
 
     @Test
     void extractYesNo_YES() throws TextUtil.TextParsingException {
         String src = "YES\n\nSome other text";
         boolean result = TextUtil.extractYesNo(src);
-        assertEquals(true, result);
+        assertTrue(result);
     }
 
     @Test

@@ -14,8 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.EnabledIf;
 import org.springframework.util.Assert;
 
 import java.io.ByteArrayInputStream;
@@ -26,7 +26,7 @@ import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.Optional;
 
-@ActiveProfiles("integration")
+@EnabledIf(expression = "#{environment.acceptsProfiles('integration')}", reason = "Runs only for integration profile")
 @SpringBootTest(classes = {LLMProviderLocalOllama.class, LLMService.class, NewsProcessorBrief.class, ParserRSS.class})
 @ContextConfiguration(classes = {TestConfig.class})
 class BriefIntegrationTest {

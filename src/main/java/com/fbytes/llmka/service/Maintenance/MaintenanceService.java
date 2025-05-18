@@ -23,7 +23,7 @@ public class MaintenanceService implements IMaintenanceService {
     private Integer metaHashSizeCore;
 
     @Autowired
-    ApplicationContext applicationContext;
+    ApplicationContext context;
     @Autowired
     private EmbeddedStoreService embeddedStoreService;
     @Autowired
@@ -32,26 +32,23 @@ public class MaintenanceService implements IMaintenanceService {
 
 
     @Override
-    @Timed(value = "llmka.newsdatacheck.compressmeta.time", description = "time to cleanup the store")
+    @Timed(value = "llmka.maintenance.compressmeta.time", description = "time to compress metaHash")
     public void compressMeta(String schema, Integer size) {
-        NewsCheckMetaSchema schemaMeta = (NewsCheckMetaSchema) applicationContext.getBean(schemaBeanPrefix + schema);
+        NewsCheckMetaSchema schemaMeta = (NewsCheckMetaSchema) context.getBean(schemaBeanPrefix + schema);
         schemaMeta.compressMetaHash(size);
     }
 
     @Override
-    //@Timed(value = "llmka.newsdatacheck.cleanupstore.time", description = "time to cleanup the store")
+    @Timed(value = "llmka.maintenance.compressdb.time", description = "time to compress db")
     public void compressDB(String schema) {
         cleanupStore(schema);
     }
 
     public void compressDB() {
-        embeddedStoreService.retieveSchemas().forEach(schema -> {
-            cleanupStore(schema);
-        });
+        embeddedStoreService.retieveSchemas().forEach(schema -> cleanupStore(schema));
     }
 
     // remove all IDes, that are not in metaHash
-
     public void cleanupStore(String schema) {
         logger.info("cleanupStore. Schema = {}", schema);
         Set<String> idsSet = newsCheckMeta.fetchIDList(schema);

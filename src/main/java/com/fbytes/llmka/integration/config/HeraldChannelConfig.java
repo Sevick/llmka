@@ -2,6 +2,7 @@ package com.fbytes.llmka.integration.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fbytes.llmka.integration.service.IHeraldFactory;
+import com.fbytes.llmka.integration.service.IHeraldPollerFactory;
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.NewsData;
 import com.fbytes.llmka.model.config.HeraldsConfiguration;
@@ -31,11 +32,8 @@ import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.context.IntegrationFlowContext;
 import org.springframework.integration.handler.BridgeHandler;
 import org.springframework.integration.router.HeaderValueRouter;
-import org.springframework.integration.scheduling.PollerMetadata;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.PollableChannel;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -57,17 +55,20 @@ public class HeraldChannelConfig implements ApplicationListener<ContextRefreshed
     private Integer defaultQueueSize;
     @Value("${llmka.config.mappings_file}")
     private String mappingConfigFile;
-    @Value("${llmka.threads.poller_prefix}")
-    private String pollerPrefix;
+    @Value("${llmka.herald.silence:false}")
+    private Boolean silence;
 
     @Autowired
     private IntegrationFlowContext flowContext;
     @Autowired
+    @Qualifier("heraldChannel_Q")
     private MessageChannel heraldChannel;
     @Autowired
     private HeraldsConfiguration heraldsConfiguration;
     @Autowired
     private IHeraldFactory heraldFactory;
+    @Autowired
+    private IHeraldPollerFactory heraldPollerFactory;
     @Autowired
     private MeterRegistry meterRegistry;
     @Autowired
@@ -84,14 +85,13 @@ public class HeraldChannelConfig implements ApplicationListener<ContextRefreshed
     private void createOutputChannels(Mapping[] mappings, ConfigurableApplicationContext context) {
         // create pub-sub channel for each unique "outputChannel" in mappings
         Set<String> outputChannels = Arrays.stream(mappings).map(mapping -> mapping.getOutputChannel()).collect(Collectors.toSet());
-        logger.debug("Creating output channels: {}", outputChannels.size());
+        logger.info("Creating output channels: {}", outputChannels.size());
         outputChannels.forEach(channelName -> {
             PublishSubscribeChannel channel = new PublishSubscribeChannel(pubsubExecutor);
             channel.setDatatypes(NewsData.class);
-            channel.setBeanName(channelName);
-            //applicationContext.registerBean(channelName, PublishSubscribeChannel.class, () -> channel);
-            context.getBeanFactory().registerSingleton(channelName, channel);
-            logger.debug("Created output channel: {}", channelName);
+            applicationContext.registerBean(channelName, PublishSubscribeChannel.class, () -> channel);
+            //context.getBeanFactory().registerSingleton(channelName, channel);
+            logger.info("Created output channel: {}", channelName);
         });
     }
 
@@ -101,20 +101,22 @@ public class HeraldChannelConfig implements ApplicationListener<ContextRefreshed
         // TODO: Make generic for other heralds
         // create herald services
         Map<String, List<Pair<String, IHerald>>> outchannelToHeraldServiceMap = new HashMap<>(); // <outputChannel, <HeraldBeanName, IHeraldService>>
-        logger.debug("Creating herald services: {}", heraldsConfiguration.getHeraldConfigs().length);
+        logger.info("Creating herald services: {}", heraldsConfiguration.getHeraldConfigs().length);
         for (HeraldConfig heraldConfig : heraldsConfiguration.getHeraldConfigs()) {
-            logger.debug("Creating herald service for channel: {}", heraldConfig.getChannel());
+            logger.info("Creating herald service for channel: {}", heraldConfig.getChannel());
             if (!(heraldConfig instanceof HeraldConfigTelegram)) {
                 throw new RuntimeException("Invalid configuration");
             }
-            Herald<HeraldMessage> createdHwraldService = heraldFactory.createHeraldService(heraldConfig);
-            Pair<String, IHerald> newHeraldPair = Pair.of(IHeraldNameService.makeFullName(heraldConfig), createdHwraldService);
+            Herald<HeraldMessage> createdHeraldService = heraldFactory.createHeraldService(heraldConfig);
+            Pair<String, IHerald> newHeraldPair = Pair.of(IHeraldNameService.makeFullName(heraldConfig), createdHeraldService);
 
             outchannelToHeraldServiceMap.computeIfAbsent(heraldConfig.getChannel(), key -> new ArrayList<>())
                     .add(newHeraldPair);
 
-            MessageChannel heraldChannel = new QueueChannel();
-            applicationContext.registerBean(heraldQueueName(IHeraldNameService.makeFullName(heraldConfig)), MessageChannel.class, () -> heraldChannel);
+            PollableChannel heraldChannel = new QueueChannel(defaultQueueSize);
+            String qName = heraldQueueName(IHeraldNameService.makeFullName(heraldConfig));
+            applicationContext.registerBean(qName, PollableChannel.class, () -> heraldChannel);
+            applicationContext.getAutowireCapableBeanFactory().autowireBean(applicationContext.getBean(qName));
 
             // TODO: Add captor
             //queueChannel.registerMetricsCaptor(new MicrometerMetricsCaptor(meterRegistry));
@@ -148,23 +150,27 @@ public class HeraldChannelConfig implements ApplicationListener<ContextRefreshed
 
         // bind heralds to corresponding output channels
         outchannelToHeraldServiceMap.entrySet().forEach(entry -> {
-            entry.getValue().forEach(heraldNameService -> {
-                String heraldQName = heraldQueueName(heraldNameService.getLeft());
+            entry.getValue().forEach(herald -> {
+                String heraldQName = heraldQueueName(herald.getLeft());
                 PollableChannel heraldQueueChannel = ((PollableChannel) beanFactory.getBean(heraldQName));
 
                 IntegrationFlow heraldQFlow = IntegrationFlow
                         .from(heraldQueueChannel)
                         .handle(message -> {
                                     try {
-                                        heraldNameService.getRight().sendMessage(TelegramMessage.fromNewsData((NewsData) message.getPayload()));
+                                        herald.getRight().sendMessage(TelegramMessage.fromNewsData((NewsData) message.getPayload()));
                                     } catch (IHerald.SendMessageException e) {
                                         heraldQueueChannel.send(message);   // requeue
                                     }
                                 },
-                                e -> e.poller(singleThreadPoller(heraldNameService.getLeft()))
+                                e -> {
+                                    e.poller(heraldPollerFactory.createHeraldPollerService(herald.getLeft()));
+                                    //e.advice(mdcAdvice);
+                                }
                         )
                         .get();
-                beanFactory.registerSingleton(heraldQName + "-Flow", heraldQFlow);
+                applicationContext.registerBean(heraldQName + "-Flow", IntegrationFlow.class, () -> heraldQFlow);
+                //beanFactory.registerSingleton(heraldQName + "-Flow", heraldQFlow);
                 flowContext.registration(heraldQFlow).register();
             });
         });
@@ -174,30 +180,25 @@ public class HeraldChannelConfig implements ApplicationListener<ContextRefreshed
         HeaderValueRouter router = new HeaderValueRouter(newsGroupHeader);
         router.setChannelMappings(Stream.of(mappings).collect(Collectors.toMap(Mapping::getInputGroup, Mapping::getOutputChannel)));
         // TODO: router.setDefaultOutputChannel();
-        beanFactory.registerSingleton("heraldRouter", router);
+        applicationContext.registerBean("heraldRouter", HeaderValueRouter.class, () -> router);
+        //beanFactory.registerSingleton("heraldRouter", router);
 
-        IntegrationFlow heraldFlow = IntegrationFlow
-                .from(heraldChannel)
-                .route(router)
-                .get();
-        beanFactory.registerSingleton("heraldFlow", heraldFlow); // TODO - replace with application.context
+        IntegrationFlow heraldFlow;
+        if (silence) {
+            heraldFlow = IntegrationFlow
+                    .from(heraldChannel)
+                    .nullChannel();
+        } else {
+            heraldFlow = IntegrationFlow
+                    .from(heraldChannel)
+                    .route(router)
+                    .get();
+        }
+        applicationContext.registerBean("herald-Flow", IntegrationFlow.class, () -> heraldFlow);
         flowContext.registration(heraldFlow).register();
     }
 
     private String heraldQueueName(String heraldBeanName) {
-        return heraldBeanName + "-Q";
-    }
-
-    public PollerMetadata singleThreadPoller(String pollerName) {
-        PollerMetadata poller = new PollerMetadata();
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(1);
-        executor.setMaxPoolSize(1);
-        executor.setThreadNamePrefix(pollerPrefix + pollerName + "-");
-        executor.initialize();
-        poller.setTaskExecutor(executor);
-        poller.setTrigger(new PeriodicTrigger(1000));
-        //poller.setSendTimeout(5000);
-        return poller;
+        return heraldBeanName + "_Q";
     }
 }

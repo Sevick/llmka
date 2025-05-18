@@ -1,10 +1,14 @@
 package com.fbytes.llmka.integration;
 
 import com.fbytes.llmka.logger.Logger;
+import com.fbytes.llmka.model.NewsData;
+import org.apache.logging.log4j.ThreadContext;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.core.MessageSelector;
+import org.springframework.integration.support.MessageBuilder;
 
 import java.text.MessageFormat;
 
@@ -16,12 +20,21 @@ public class MainIntegrationFlow {
     private String rejectReasonHeader;
     @Value("${llmka.newscheck.reject.reject_explain_header}")
     private String rejectExplainHeader;
-
+    @Value("${llmka.newsdata_header}")
+    private String newsDataHeader;
 
     @Bean
     public org.springframework.integration.dsl.IntegrationFlow bridgeDataCheck() {
         return org.springframework.integration.dsl.IntegrationFlow
                 .from("newsDataChannelOut")
+                .handle((payload, headers) -> {
+                    MDC.put(newsDataHeader, ((NewsData) payload).getId());
+                    ThreadContext.put(newsDataHeader, ((NewsData) payload).getId());
+                    return MessageBuilder
+                            .withPayload(payload)
+                            .copyHeaders(headers)
+                            .build();
+                })
                 .channel("newsCheckMetaChannel")
                 .get();
     }
@@ -65,7 +78,7 @@ public class MainIntegrationFlow {
     public org.springframework.integration.dsl.IntegrationFlow bridgeBrief() {
         return org.springframework.integration.dsl.IntegrationFlow
                 .from("briefChannelOut")
-                .channel("heraldChannel")
+                .channel("heraldChannel_Q")
                 .get();
     }
 
@@ -81,6 +94,6 @@ public class MainIntegrationFlow {
                         )
                 )
                 .get();
-        //.nullChannel();
+                //.nullChannel();
     }
 }

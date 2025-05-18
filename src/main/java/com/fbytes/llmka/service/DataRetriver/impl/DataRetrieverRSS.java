@@ -41,20 +41,23 @@ public class DataRetrieverRSS extends DataRetriever<RssNewsSource> {
     }
 
     @Override
-    @Timed(value = "llmka.dataretrive.rss.time", description = "time retrieve RSS data")
-    @NewSpan(name = "dataretriverss-span")
+    @Timed(value = "llmka.dataretrive.rss.time", description = "time retrieve RSS data", percentiles = {0.5, 0.9})
     public Optional<Stream<NewsData>> retrieveData(RssNewsSource dataSource) {
         try {
             ResponseEntity<byte[]> responseEntity = restTemplate.exchange(dataSource.getUrl(), HttpMethod.GET, httpEntity, byte[].class);
             if (!responseEntity.getStatusCode().is2xxSuccessful() || responseEntity.getBody() == null || responseEntity.getBody().length == 0) {
-                logger.debug("[{}] Failed to retrieve data from: \nResponseStatus: {}, ResponseBody: {}",
-                        dataSource.getName(), dataSource.getUrl(), responseEntity.getStatusCode(), responseEntity.getBody());
+                logger.debug("Failed to retrieve data from: {}\nResponseStatus: {}, ResponseBody: {}",
+                        dataSource.getUrl(), responseEntity.getStatusCode(), responseEntity.getBody());
                 return Optional.empty();
             }
             byte[] feedStr = responseEntity.getBody();
-            logger.debug("[{}] read {} bytes", dataSource.getName(), feedStr.length);
+            if (feedStr == null || feedStr.length==0){
+                logger.debug("Empty response body from: {}", dataSource.getUrl());
+                return Optional.empty();
+            }
+            logger.debug("read {} bytes", feedStr.length);
             NewsData[] result = parserRSS.parseRSS(new ByteArrayInputStream(feedStr));
-            logger.debug("[{}] entries processed: {}", dataSource.getName(), result.length);
+            logger.debug("entries processed: {}", result.length);
             return Optional.of(Arrays.stream(result)
                     .map(newsData -> {
                         newsData.setDataSourceID(dataSource.getId());
@@ -62,7 +65,7 @@ public class DataRetrieverRSS extends DataRetriever<RssNewsSource> {
                         return newsData;
                     }));
         } catch (Exception e) {
-            logger.logException(MessageFormat.format("[{}] dataSource", dataSource.getName()), e);
+            logger.logException(e);
             return Optional.empty();
         }
     }

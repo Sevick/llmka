@@ -49,19 +49,19 @@ public class NewsCheckAd implements INewsCheck {
         if (!serviceEnabled)
             return Optional.empty();
 
-        logger.trace("[{}] NewsCheckAd. Checking news data: {}", schema, newsData.toText());
+        logger.trace("Checking news data: {}", newsData.toText());
         String response = llmProvider.askLLM(systemPrompt, MessageFormat.format(userPrompt, newsData.toText()), Optional.empty());
-        logger.trace("NewsCheckAd. LLM response: {}", response);
+        logger.trace("LLM response: {}", response);
         boolean answer = false;
         try {
             answer = TextUtil.extractYesNo(response);
         } catch (TextUtil.TextParsingException e) {
-            logger.warn("[{}] NewsCheckAd. Unable to parse LLM response: {}\nNewsData: {}", schema, response, newsData);
+            logger.warn("Unable to parse LLM response: {}\nNewsData: {}", response, newsData);
             // assume non-commercial if service is not available
         }
 
         if (answer) {
-            logger.debug("[{}] NewsCheckAd filtered : {}\nLLM respons: {}", schema, newsData.toText(), response);
+            logger.debug("filtered : {}\nLLM response: {}", newsData.toText(), response);
             return Optional.of(new RejectReason(RejectReason.REASON.COMMERCIAL, Optional.of(response)));
         } else {
             return Optional.empty();

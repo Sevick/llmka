@@ -10,8 +10,8 @@ import org.springframework.messaging.MessageChannel;
 @Configuration
 public class ChannelsConfig {
 
-    @Bean(name = "heraldChannel")
-    public MessageChannel heraldChannel() {
+    @Bean(name = "heraldChannel_Q")
+    public MessageChannel heraldChannel_Q() {
         return new QueueChannel();
     }
 
@@ -21,7 +21,6 @@ public class ChannelsConfig {
         channel.setDatatypes(NewsData.class);
         return channel;
     }
-
 
 
 //    @Bean

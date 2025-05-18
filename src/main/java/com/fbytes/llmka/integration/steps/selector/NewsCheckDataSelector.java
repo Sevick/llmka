@@ -1,4 +1,4 @@
-package com.fbytes.llmka.integration;
+package com.fbytes.llmka.integration.steps.selector;
 
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.NewsData;
@@ -13,8 +13,8 @@ import org.springframework.messaging.MessageChannel;
 
 import java.util.Optional;
 
-public class NewsCheckAdSelector implements MessageSelector {
-    private static final Logger logger = Logger.getLogger(NewsCheckAdSelector.class);
+public class NewsCheckDataSelector implements MessageSelector {
+    private static final Logger logger = Logger.getLogger(NewsCheckDataSelector.class);
 
     @Value("${llmka.newscheck.reject.reject_reason_header}")
     private String rejectReasonHeader;
@@ -22,15 +22,15 @@ public class NewsCheckAdSelector implements MessageSelector {
     private String rejectExplainHeader;
 
     @Autowired
-    @Qualifier("newsCheckAd")
-    private INewsCheck newsCheckAd;
+    @Qualifier("newsCheckData")
+    private INewsCheck newsCheckData;
     @Value("${llmka.herald.news_group_header}")
     private String newsGroupHeader;
 
     private final MessageChannel rejectChannel;
 
 
-    public NewsCheckAdSelector(@Autowired MessageChannel rejectChannel) {
+    public NewsCheckDataSelector(@Autowired MessageChannel rejectChannel) {
         this.rejectChannel = rejectChannel;
     }
 
@@ -39,8 +39,8 @@ public class NewsCheckAdSelector implements MessageSelector {
         try {
             String schema = (String) message.getHeaders().get(newsGroupHeader);
             if (schema == null)
-                throw new RuntimeException("NewsCheckAdSelector expects " + newsGroupHeader + " header to be set");
-            Optional<INewsCheck.RejectReason> result = newsCheckAd.checkNews(schema, (NewsData) message.getPayload());
+                throw new RuntimeException("NewsCheckDataSelector expects " + newsGroupHeader + " header to be set");
+            Optional<INewsCheck.RejectReason> result = newsCheckData.checkNews(schema, (NewsData) message.getPayload());
             if (!result.isEmpty()) {
                 Message<?> rejectedMessage = MessageBuilder.fromMessage(message)
                         .setHeader(rejectReasonHeader, result.get().getReason())

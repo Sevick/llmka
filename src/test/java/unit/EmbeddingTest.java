@@ -3,11 +3,10 @@ package unit;
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.EmbeddedData;
 import com.fbytes.llmka.model.NewsData;
-import com.fbytes.llmka.service.Embedding.IEmbeddingService;
 import com.fbytes.llmka.service.Embedding.EmbeddingService;
+import com.fbytes.llmka.service.Embedding.IEmbeddingService;
 import dev.langchain4j.store.embedding.CosineSimilarity;
 import dev.langchain4j.store.embedding.RelevanceScore;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,7 +29,8 @@ class EmbeddingTest {
     @Test
     void testEmbeddingService() {
         NewsData newsData = NewsData.builder()
-                .id("ID1")
+                .id("intID1")
+                .extID("extID1")
                 .dataSourceID("DataSourceID")
                 .link("http://somelink")
                 .title("Title")
@@ -46,13 +46,15 @@ class EmbeddingTest {
     @Test
     void similarityTest1() {
         NewsData newsData1 = NewsData.builder()
-                .id("1")
+                .id("intID1")
+                .extID("extID1")
                 .link("http://1")
                 .title("В Явне в результате ДТП тяжело травмирован пешеход.")
                 .description(Optional.of("На улице А-Дугит в Явне автомобиль сбил пешехода. Парамедики службы скорой помощи \"Маген Давид Адом\" передали, что пострадавший (примерно 40 лет) при падении ударился головой и получил черепно-мозговую травму."))
                 .build();
         NewsData newsData2 = NewsData.builder()
                 .id("2")
+                .extID("extID2")
                 .link("http://2")
                 .title("Машина сбила 40-летнего мужчину в Явне, он в тяжелом состоянии. Автомобиль сбил мужчину в возрасте около 40 лет в Явне.")
                 .description(Optional.empty())
@@ -72,12 +74,14 @@ class EmbeddingTest {
     void similarityTest2() {
         NewsData newsData1 = NewsData.builder()
                 .id("xxx1yyy")
+                .extID("extID1")
                 .link("http://1/aaaaaa")
                 .title("Академия иврита: иерусалимская бабочка будет теперь носить имя Ариэля Бибаса.")
                 .description(Optional.of("5-летний \"рыжик\" любил бабочек, но особенно эту, похожую цветом на него самого."))
                 .build();
         NewsData newsData2 = NewsData.builder()
                 .id("yyy1xxx")
+                .extID("extID2")
                 .link("http://2/bbbbb")
                 .title("Академия иврита назвала одну из бабочек в память о 5-летнем Ариэле Бибасе.")
                 .description(Optional.of("Эта оранжевая бабочка в черных пятнах (по-русски ее называют \"шашечница изящная\") принадлежит к виду дневных бабочек рода Melitaea семейства Нимфалиды (Nymphalidae)."))
@@ -96,12 +100,14 @@ class EmbeddingTest {
     void similarityTest3() {
         NewsData newsData1 = NewsData.builder()
                 .id("1")
+                .extID("extID1")
                 .link("http://1")
                 .title("СМИ: Иран нанял киллера из Грузии для ликвидации раввина в Азербайджане.")
                 .description(Optional.of("О попытке покушения стало известно в начале 2025 года, но его цель была раскрыта только сейчас."))
                 .build();
         NewsData newsData2 = NewsData.builder()
                 .id("2")
+                .extID("extID2")
                 .link("http://2")
                 .title("Иран заказал убийство раввина в Азербайджане.")
                 .description(Optional.of("Иранские силы «Кудс» наняли наркоторговца, чтобы убить азербайджанского раввина. Преступление предотвратили еще в январе, но его."))
@@ -120,12 +126,14 @@ class EmbeddingTest {
     void similarityTest4() {
         NewsData newsData1 = NewsData.builder()
                 .id("1")
+                .extID("extID1")
                 .link("http://1")
                 .title("СМИ: Иран нанял киллера из Грузии для ликвидации раввина в Азербайджане .")
                 .description(Optional.empty())
                 .build();
         NewsData newsData2 = NewsData.builder()
                 .id("2")
+                .extID("extID2")
                 .link("http://2")
                 .title("Иран заказал убийство раввина в Азербайджане.")
                 .description(Optional.empty())
@@ -145,18 +153,21 @@ class EmbeddingTest {
     void similarityTest5() {
         NewsData newsData1 = NewsData.builder()
                 .id("1")
+                .extID("extID1")
                 .link("http://1")
                 .title("Бывшая заложница Ноа Аргамани вошла в список 100 самых влиятельных людей мира по версии журнала TIME.")
                 .description(Optional.of("Бывшая заложница ХАМАСа Ноя Аргемани, освобождённая из Газы в ходе операции «Арнон», признана одной из самых влиятельных персон года по версии американского журнала TIME. Текст о ней написал Даг Эмхофф — супруг экс-вице-президента США Камалы Харрис."))
                 .build();
         NewsData newsData2 = NewsData.builder()
                 .id("2")
+                .extID("extID2")
                 .link("http://2")
                 .title("100 самых влиятельных людей 2025 года от Time: Трамп, Маск, Аргамани и другие.")
                 .description(Optional.of("Журнал Time опубликовал список \"100 самых влиятельных людей 2025 года\". В списке израильтянка – Ноа Аргамани, похищенная террористами ХАМАСа во время бойни на фестивале Nova и освобожденная ЦАХАЛом."))
                 .build();
         NewsData newsData3 = NewsData.builder()
                 .id("2")
+                .extID("extID2")
                 .link("http://2")
                 .title("Освобожденная заложница - в списке 100 самых влиятельных людей мира.")
                 .description(Optional.of("Журнал Time поставил имя Ноа Аргамани в один ряд с Трампом, Маском, звездами кино и спорта."))

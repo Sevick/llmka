@@ -3,24 +3,36 @@
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout  charset="UTF-8"
-                            pattern="%d{MM-dd HH:mm:ss} %tid %-5p %c{1}:%L - %m%n"/>
+                            pattern="%d{dd-MM HH:mm:ss} %5.5tid %-5p [%X{NEWS_SOURCE_ID}] [%X{NEWS_DATA_ID}] %c{1}:%L - %m%n"/>
         </Console>
         <RollingFile name="RollingFileAppender" fileName="logs/llmka.log"
                      filePattern="logs/llmka-%i.log">
             <PatternLayout charset="UTF-8"
-                           pattern="%d{MM-dd HH:mm:ss} %tid %-5p %c{1}:%L - %m%n"/>
+                           pattern="%d{dd-MM HH:mm:ss} %tid %-5p [%X{NEWS_SOURCE_ID}] [%X{NEWS_DATA_ID}] %c{1}:%L - %m%n"/>
             <Policies>
-                <SizeBasedTriggeringPolicy size="10MB"/>
+                <OnStartupTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="10MB" />
+            </Policies>
+            <DefaultRolloverStrategy max="3"/>
+        </RollingFile>
+        <RollingFile name="RollingFileAppenderDebug" fileName="logs/llmka-debug.log"
+                     filePattern="logs/llmka-debug-%i.log">
+            <PatternLayout charset="UTF-8"
+                           pattern="%d{dd-MM HH:mm:ss} %tid %-5p [%X{NEWS_SOURCE_ID}] [%X{NEWS_DATA_ID}] %c{1}:%L - %m%n"/>
+            <Policies>
+                <OnStartupTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="10MB" />
             </Policies>
             <DefaultRolloverStrategy max="3"/>
         </RollingFile>
      </Appenders>
     <Loggers>
-        <Logger name="com.fbytes.llmka" level="debug" additivity="false">
+        <Logger name="com.fbytes.llmka.integration" level="debug" additivity="false">
             <AppenderRef ref="Console"/>
+            <AppenderRef ref="RollingFileAppenderDebug"/>
         </Logger>
         <Logger name="com.fbytes.llmka" level="debug" additivity="false">
-            <AppenderRef ref="Console"/>
+            <AppenderRef ref="RollingFileAppenderDebug"/>
         </Logger>
         <Logger name="org.springframework.integration" level="debug" additivity="false">
             <AppenderRef ref="Console"/>

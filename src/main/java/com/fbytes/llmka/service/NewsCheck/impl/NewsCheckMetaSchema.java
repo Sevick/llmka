@@ -2,15 +2,14 @@ package com.fbytes.llmka.service.NewsCheck.impl;
 
 import com.fbytes.llmka.config.profiles.metrics.ParamTimedMetric;
 import com.fbytes.llmka.logger.Logger;
-import com.fbytes.llmka.model.appevent.AppEventMethashCompress;
-import com.fbytes.llmka.service.AppEventService.IAppEventSenderService;
-import com.fbytes.llmka.service.INewsIDStore;
 import com.fbytes.llmka.model.NewsData;
+import com.fbytes.llmka.model.appevent.AppEventMetahashCompress;
+import com.fbytes.llmka.service.Maintenance.AppEventSenderService.IAppEventSenderService;
+import com.fbytes.llmka.service.INewsIDStore;
 import com.fbytes.llmka.service.NewsCheck.INewsCheck;
 import io.micrometer.core.annotation.Timed;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.tracing.annotation.NewSpan;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,9 +73,9 @@ public class NewsCheckMetaSchema implements INewsCheck, INewsIDStore {
 
 
     private String extractMeta(NewsData newsData) {
-        String id = newsData.getId();
+        //String id = newsData.getExtID();
         String metaStr = newsData.getLink();
-        metaStr = metaStr == null ? newsData.getTitle() : metaStr;
+        metaStr = (metaStr == null || metaStr.isEmpty()) ? newsData.getTitle() : metaStr;
         return metaStr;
     }
 
@@ -87,17 +86,17 @@ public class NewsCheckMetaSchema implements INewsCheck, INewsIDStore {
         Pair<Integer, String> result;
         try {
             metaHashCompressLock.readLock().lock();
-            result = metaHash.putIfAbsent(calculateMD5Hash(metaStr), Pair.of(metaHashSeq.getAndIncrement(), newsData.getId()));
+            result = metaHash.putIfAbsent(calculateMD5Hash(metaStr), Pair.of(metaHashSeq.getAndIncrement(), newsData.getExtID()));
         } finally {
             metaHashCompressLock.readLock().unlock();
         }
 
         if (result != null) {
-            logger.trace("[{}] NewsCheckMeta filtered: {}", schema, newsData.toText());
+            logger.trace("NewsCheckMeta filtered: {}", newsData.toText());
             return Optional.of(new RejectReason(RejectReason.REASON.META_DUPLICATION));
         } else {
             if (metaHash.size() > metaHashSizeLimit) {
-                logger.trace("[{}] Lock acquired for meta compression", schema);
+                logger.trace("Lock acquired for meta compression");
                 Pair<ConcurrentMap<BigInteger, Pair<Integer, String>>, List<String>> compressionResult = compressMetaHash(metaHashSizeCore);
                 //metaHash = compressionResult.getLeft();
             }
@@ -118,11 +117,11 @@ public class NewsCheckMetaSchema implements INewsCheck, INewsIDStore {
         Map.Entry<BigInteger, Pair<Integer, String>>[] entriesArr;
         ConcurrentHashMap<BigInteger, Pair<Integer, String>> newMetaHash;
         try {
-            logger.trace("Acquiring write lock for meta compression: {}", schema);
+            logger.trace("[{}] Acquiring write lock for meta compression", schema);
             metaHashCompressLock.writeLock().lock();
-            logger.trace("Lock acquired for meta compression: {}", schema);
+            logger.trace("[{}] Lock acquired for meta compression", schema);
 
-            logger.info("Compressing metaHash ({}). Current size: {}", schema, metaHash.size());
+            logger.info("[{}] Compressing metaHash. Current size: {}", schema, metaHash.size());
             Map<BigInteger, Pair<Integer, String>> newMetaMap = new ConcurrentHashMap();
             entriesArr = metaHash.entrySet().toArray(new Map.Entry[0]);
             Arrays.sort(entriesArr, Map.Entry.<BigInteger, Pair<Integer, String>>comparingByValue().reversed());
@@ -141,7 +140,7 @@ public class NewsCheckMetaSchema implements INewsCheck, INewsIDStore {
         List<String> removedIdList = Arrays.stream(entriesArr, targetSize + 1, entriesArr.length - 1)
                 .map(entry -> entry.getValue().getRight())
                 .toList();
-        appEventSenderService.sendEvent(new AppEventMethashCompress("NewsCheckMetaSchema", schema));
+        appEventSenderService.sendEvent(new AppEventMetahashCompress("NewsCheckMetaSchema", schema));
         return Pair.of(newMetaHash, removedIdList);
     }
 

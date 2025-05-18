@@ -14,6 +14,7 @@ import dev.langchain4j.model.chat.request.json.JsonSchemaElement;
 import io.micrometer.core.annotation.Timed;
 import io.micrometer.tracing.annotation.NewSpan;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,7 @@ import java.time.Duration;
 import java.util.Optional;
 
 @Service
+@Qualifier("NewsProcessorBrief")
 public class NewsProcessorBrief extends NewsProcessor implements INewsProcessor {
     private static final Logger logger = Logger.getLogger(NewsProcessorBrief.class);
 
@@ -69,12 +71,11 @@ public class NewsProcessorBrief extends NewsProcessor implements INewsProcessor 
 
     @Override
     @Timed(value = "llmka.briefmaker.time", description = "time to write short description")
-    @NewSpan(name = "briefmaker-span")
     public NewsData process(NewsData newsData) {
         if (newsData.getDescription().orElse("").length() <= descriptionSizeLimit)
             return newsData;
 
-        logger.debug("processing id: {}", newsData.getId());
+        logger.debug("processing");
 
         String shortDescription =
                 llmProvider.askLLM(systemPrompt,
@@ -90,8 +91,8 @@ public class NewsProcessorBrief extends NewsProcessor implements INewsProcessor 
             NewsData result = newsData.toBuilder().build();
             result.setDescription(Optional.of(shortDescription));
             result.setRewritten(true);
-            logger.debug("finished processing id: {}\nOld description: {}\nNew description: {}",
-                    newsData.getId(), newsData.getDescription().orElse(""), result.getDescription().orElse(""));
+            logger.debug("finished processing New description: {}   Old description: {} ",
+                    result.getDescription().orElse(""), newsData.getDescription().orElse(""));
             return result;
         } catch (Exception e) {
             logger.logException(e);

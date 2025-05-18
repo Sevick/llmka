@@ -110,11 +110,11 @@ public class TextUtil {
 
 
     public static boolean extractYesNo(String src) throws TextParsingException {
-        String yesNoStr = src.split("[\n \\.,]")[0].toLowerCase();
+        String yesNoStr = src.trim().split("[\n \\.,;]")[0].toLowerCase();
         switch (yesNoStr) {
-            case "yes":
+            case "yes", "**yes**", "**yes":
                 return true;
-            case "no":
+            case "no", "**no**", "**no":
                 return false;
             default:
                 throw new TextParsingException("Unable to interpret the string as 'yes' or 'no'");

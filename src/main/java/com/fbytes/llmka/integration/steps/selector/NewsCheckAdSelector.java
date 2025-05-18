@@ -1,4 +1,4 @@
-package com.fbytes.llmka.integration;
+package com.fbytes.llmka.integration.steps.selector;
 
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.NewsData;
@@ -13,8 +13,8 @@ import org.springframework.messaging.MessageChannel;
 
 import java.util.Optional;
 
-public class NewsCheckMetaSelector implements MessageSelector {
-    private static final Logger logger = Logger.getLogger(NewsCheckMetaSelector.class);
+public class NewsCheckAdSelector implements MessageSelector {
+    private static final Logger logger = Logger.getLogger(NewsCheckAdSelector.class);
 
     @Value("${llmka.newscheck.reject.reject_reason_header}")
     private String rejectReasonHeader;
@@ -22,15 +22,15 @@ public class NewsCheckMetaSelector implements MessageSelector {
     private String rejectExplainHeader;
 
     @Autowired
-    @Qualifier("newsCheckMeta")
-    private INewsCheck newsMetaCheck;
+    @Qualifier("newsCheckAd")
+    private INewsCheck newsCheckAd;
     @Value("${llmka.herald.news_group_header}")
     private String newsGroupHeader;
 
     private final MessageChannel rejectChannel;
 
 
-    public NewsCheckMetaSelector(@Autowired MessageChannel rejectChannel) {
+    public NewsCheckAdSelector(@Autowired MessageChannel rejectChannel) {
         this.rejectChannel = rejectChannel;
     }
 
@@ -39,8 +39,8 @@ public class NewsCheckMetaSelector implements MessageSelector {
         try {
             String schema = (String) message.getHeaders().get(newsGroupHeader);
             if (schema == null)
-                throw new RuntimeException("NewsCheckMetaSelector expects " + newsGroupHeader + " header to be set");
-            Optional<INewsCheck.RejectReason> result = newsMetaCheck.checkNews(schema, (NewsData) message.getPayload());
+                throw new RuntimeException("NewsCheckAdSelector expects " + newsGroupHeader + " header to be set");
+            Optional<INewsCheck.RejectReason> result = newsCheckAd.checkNews(schema, (NewsData) message.getPayload());
             if (!result.isEmpty()) {
                 Message<?> rejectedMessage = MessageBuilder.fromMessage(message)
                         .setHeader(rejectReasonHeader, result.get().getReason())
@@ -50,8 +50,7 @@ public class NewsCheckMetaSelector implements MessageSelector {
                 return false;
             }
             return true;
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             logger.logException(e);
             throw e;
         }

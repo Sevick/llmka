@@ -1,4 +1,4 @@
-package com.fbytes.llmka.service.ControlCenter;
+package com.fbytes.llmka.service.Maintenance.ControlCenter;
 
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.appevent.AppEvent;

@@ -13,10 +13,10 @@ import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.file.dsl.Files;
 import org.springframework.integration.file.filters.SimplePatternFileListFilter;
 import org.springframework.integration.scheduling.PollerMetadata;
-import org.springframework.integration.support.MessageBuilder;
 import org.springframework.messaging.MessageChannel;
 
 import java.io.File;
+import java.util.List;
 
 @Configuration
 public class StepReadNewsSourceConfig {
@@ -39,18 +39,13 @@ public class StepReadNewsSourceConfig {
         return IntegrationFlow
                 .from(Files.inboundAdapter(new File(configFolder))
                                 .filter(new SimplePatternFileListFilter("*.cfg")),
-                        config -> config.poller(newsSourcePoller)) // Poll every minute
+                        config -> config.poller(newsSourcePoller))
                 .handle((payload, headers) -> {
-                    newsSourceConfigReader.retrieveFromFile(newsSourceFactory, (File) payload, item ->
-                            newsSourceChannel.send(
-                                    MessageBuilder
-                                            .withPayload(item)
-                                            .copyHeaders(headers)
-                                            .build()
-                            )
-                    );
-                    return null;
+                    List<NewsSource> newsSourceList = newsSourceConfigReader.retrieveFromFile(newsSourceFactory, (File) payload);
+                    return newsSourceList.toArray();
                 })
+                .split()
+                .channel(newsSourceChannel)
                 .get();
     }
 }

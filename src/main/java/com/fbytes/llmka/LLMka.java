@@ -4,6 +4,7 @@ import com.fbytes.llmka.config.TelegramBotConfig;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.integration.config.EnableIntegration;
 import org.springframework.integration.config.EnableIntegrationManagement;
 import org.springframework.integration.config.EnableMessageHistory;
@@ -21,6 +22,7 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 @EnableIntegrationManagement(defaultLoggingEnabled = "true", observationPatterns = "*")
 //@EnableWebMvc
 @EnableConfigurationProperties(TelegramBotConfig.class)
+@EnableAspectJAutoProxy
 public class LLMka {
     public static void main(String[] args) {
         new SpringApplicationBuilder(LLMka.class)

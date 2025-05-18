@@ -28,7 +28,7 @@ public class HeraldFactory implements IHeraldFactory {
         applicationContext.registerBean(beanName, HeraldTelegram.class, () ->
                 new HeraldTelegram((HeraldConfigTelegram) heraldConfig)
         );
-        logger.debug("HeraldFactory created bean {} of type {}", beanName, heraldConfig.getClass().getSimpleName());
+        logger.debug("created bean {} of type {}", beanName, heraldConfig.getClass().getSimpleName());
         return (Herald<HeraldMessage>) applicationContext.getBean(beanName);
     }
 }

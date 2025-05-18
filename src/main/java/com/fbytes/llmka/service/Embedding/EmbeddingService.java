@@ -49,9 +49,9 @@ public class EmbeddingService implements IEmbeddingService {
     @Override
     @Timed(value = "llmka.embedding.time", description = "time to embed NewsData", percentiles = {0.5, 0.9})
     public EmbeddedData embedNewsData(NewsData newsData) {
-        logger.debug("[{}] [{}] newsData processing", newsData.getDataSourceName(), newsData.getId());
+        logger.debug("newsData processing");
         Map<String, String> metadataMap = new HashMap<>();
-        metadataMap.put("id", newsData.getId());
+        metadataMap.put("id", newsData.getExtID());
         metadataMap.put("link", newsData.getLink());
         Metadata metadata = Metadata.from(metadataMap);
         String normalizedTitle = TextUtil.normalize(newsData.getTitle());
@@ -61,7 +61,7 @@ public class EmbeddingService implements IEmbeddingService {
         DocumentSplitter splitter = DocumentSplitters.recursive(segmentLengthLimit, segmentOverlap);
         List<TextSegment> segments = splitter.split(document);
         List<Embedding> embeddings = embeddingModel.embedAll(segments).content();
-        logger.trace("[{}] [{}] newsData - produced {} TextSegments and {} embeddings", newsData.getDataSourceName(), newsData.getId(), segments.size(), embeddings.size());
+        logger.trace("newsData - produced {} TextSegments and {} embeddings", segments.size(), embeddings.size());
         return new EmbeddedData(newsData, segments, embeddings);
     }
 

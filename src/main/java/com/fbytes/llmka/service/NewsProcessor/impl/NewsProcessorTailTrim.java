@@ -5,10 +5,12 @@ import com.fbytes.llmka.model.NewsData;
 import com.fbytes.llmka.service.NewsProcessor.INewsProcessor;
 import io.micrometer.core.annotation.Timed;
 import io.micrometer.tracing.annotation.NewSpan;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
+@Qualifier("NewsProcessorTailTrim")
 public class NewsProcessorTailTrim extends NewsProcessor implements INewsProcessor {
     private static final Logger logger = Logger.getLogger(NewsProcessorTailTrim.class);
 
@@ -17,7 +19,6 @@ public class NewsProcessorTailTrim extends NewsProcessor implements INewsProcess
 
     @Override
     @Timed(value = "llmka.tailtrimmer.time", description = "time to trim the tail")
-    @NewSpan(name = "tailtrim-span")
     public NewsData process(NewsData newsData) {
         if (!serviceEnabled || newsData.getDescription().get().isEmpty())
             return newsData;

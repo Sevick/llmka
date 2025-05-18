@@ -1,9 +1,8 @@
-package com.fbytes.llmka.service.AppEventService.impl;
+package com.fbytes.llmka.service.Maintenance.AppEventSenderService.impl;
 
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.appevent.AppEvent;
-import com.fbytes.llmka.service.AppEventService.AppEventSenderService;
-import com.fbytes.llmka.service.NewsCheck.impl.NewsCheckMetaSchema;
+import com.fbytes.llmka.service.Maintenance.AppEventSenderService.AppEventSenderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.integration.support.MessageBuilder;

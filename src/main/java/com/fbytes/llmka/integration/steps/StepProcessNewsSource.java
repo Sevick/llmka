@@ -4,6 +4,8 @@ import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.NewsData;
 import com.fbytes.llmka.model.config.newssource.NewsSource;
 import com.fbytes.llmka.service.DataRetrieverService.IDataRetrieveService;
+import org.apache.logging.log4j.ThreadContext;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,6 +13,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
+import org.springframework.integration.support.MessageBuilder;
 import org.springframework.messaging.MessageChannel;
 
 import java.util.Optional;
@@ -48,8 +51,17 @@ public class StepProcessNewsSource {
                 .from("newsSourceChannel")
                 .enrichHeaders(h -> h
                         .headerFunction(newsGroupHeader,m -> ((NewsSource) m.getPayload()).getGroup())
-                        .headerFunction(newsSourceHeader, m -> ((NewsSource) m.getPayload()).getName())
+                        .headerFunction(newsSourceHeader, m -> ((NewsSource) m.getPayload()).getId())
                 )
+                .handle((payload, headers) -> {
+                    MDC.put(newsSourceHeader, (String) headers.get(newsSourceHeader));
+                    ThreadContext.remove(newsDataHeader);
+                    ThreadContext.put(newsSourceHeader, (String) headers.get(newsSourceHeader));
+                    return MessageBuilder
+                            .withPayload(payload)
+                            .copyHeaders(headers)
+                            .build();
+                })
                 .handle(dataRetrieveService, "retrieveData")
                 .filter((Optional<Stream<NewsData>> opt) -> !opt.isEmpty())
                 .transform((Optional<Stream<NewsData>> opt) -> opt.get())

@@ -1,4 +1,4 @@
-package com.fbytes.llmka.service.AppEventService;
+package com.fbytes.llmka.service.Maintenance.AppEventSenderService;
 
 import com.fbytes.llmka.model.appevent.AppEvent;
 
