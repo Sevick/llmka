@@ -125,7 +125,7 @@ public class EmbeddedStore implements IEmbeddedStore {
     @Override
     public void removeOtherIDes(Collection<String> idList) {
         logger.debug("[{}] Cleaning up store. Entries to keep: {}", storeName, idList.size());
-        Set<String> idsToRemove = new HashSet<String>(embeddingStore.fetchAllIDes());
+        Set<String> idsToRemove = new HashSet<>(embeddingStore.fetchAllIDes());
         if (idsToRemove.isEmpty()) {
             logger.debug("[{}] There is nothing to cleanup. Entries left: {}", storeName, idList.size());
             return;
@@ -202,6 +202,10 @@ public class EmbeddedStore implements IEmbeddedStore {
     @Override
     public boolean removeStorage() {
         boolean result = (new File(storeFilePath)).delete();
+        if (!result) {
+            logger.warn("Unable to remove storage file: {}", storeFilePath);
+        }
+        return result;
     }
 
     private void restore(String storeFilePath) {

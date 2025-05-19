@@ -1,12 +1,8 @@
 package com.fbytes.llmka.config;
 
-import com.fbytes.llmka.model.config.HeraldsConfiguration;
 import com.fbytes.llmka.model.config.IConfigFactory;
 import com.fbytes.llmka.model.config.NewsGroupsConfiguration;
-import com.fbytes.llmka.model.config.heraldchannel.HeraldConfig;
 import com.fbytes.llmka.model.config.newsgroup.NewsGroup;
-import com.fbytes.llmka.model.config.newssource.NewsSource;
-import com.fbytes.llmka.service.ConfigReader.ConfigReader;
 import com.fbytes.llmka.service.ConfigReader.IConfigReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

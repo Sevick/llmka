@@ -14,7 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 public class HeraldsConfiguration {
     private HeraldConfig[] heraldConfigs;
 
-    static public String heraldName(HeraldConfig heraldConfig) {
+    public static String heraldName(HeraldConfig heraldConfig) {
         return StringUtils.capitalize(heraldConfig.getType().toLowerCase()) + "-" + heraldConfig.getName();
     }
 }

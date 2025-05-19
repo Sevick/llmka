@@ -9,7 +9,7 @@ public interface IHerald<T extends HeraldMessage> {
 
     public abstract class SendMessageException extends Exception{}
 
-    public class SendMessageExceptionTemporary extends SendMessageException{};
+    public class SendMessageExceptionTemporary extends SendMessageException{}
 
     public class SendMessageExceptionPermanent extends SendMessageException {}
 

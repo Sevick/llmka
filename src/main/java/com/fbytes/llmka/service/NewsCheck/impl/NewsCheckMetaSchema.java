@@ -73,8 +73,7 @@ public class NewsCheckMetaSchema implements INewsCheck, INewsIDStore {
 
 
     private String extractMeta(NewsData newsData) {
-        //String id = newsData.getExtID();
-        String metaStr = newsData.getLink();
+        String metaStr = newsData.getExtID();
         metaStr = (metaStr == null || metaStr.isEmpty()) ? newsData.getTitle() : metaStr;
         return metaStr;
     }
@@ -97,13 +96,11 @@ public class NewsCheckMetaSchema implements INewsCheck, INewsIDStore {
         } else {
             if (metaHash.size() > metaHashSizeLimit) {
                 logger.trace("Lock acquired for meta compression");
-                Pair<ConcurrentMap<BigInteger, Pair<Integer, String>>, List<String>> compressionResult = compressMetaHash(metaHashSizeCore);
-                //metaHash = compressionResult.getLeft();
+                compressMetaHash(metaHashSizeCore);
             }
             return Optional.empty();
         }
     }
-
 
     // returns <newHashMap, List<removedIDes>
     @Timed(value = "llmka.newsdatacheck.compressmetahash.time", description = "time to compress metaHash", percentiles = {0.5, 0.9})
@@ -122,13 +119,12 @@ public class NewsCheckMetaSchema implements INewsCheck, INewsIDStore {
             logger.trace("[{}] Lock acquired for meta compression", schema);
 
             logger.info("[{}] Compressing metaHash. Current size: {}", schema, metaHash.size());
-            Map<BigInteger, Pair<Integer, String>> newMetaMap = new ConcurrentHashMap();
             entriesArr = metaHash.entrySet().toArray(new Map.Entry[0]);
             Arrays.sort(entriesArr, Map.Entry.<BigInteger, Pair<Integer, String>>comparingByValue().reversed());
 
             metaHashSeq.set(0);
             newMetaHash = Arrays.stream(entriesArr, 0, targetSize)
-                    .collect(Collectors.toMap(entry -> entry.getKey(),
+                    .collect(Collectors.toMap(Map.Entry::getKey,
                             entry -> Pair.of(metaHashSeq.getAndIncrement(), entry.getValue().getRight()),    // replace seq#
                             (existing, replacement) -> existing,
                             ConcurrentHashMap::new));

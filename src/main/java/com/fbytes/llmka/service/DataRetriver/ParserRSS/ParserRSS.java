@@ -28,7 +28,13 @@ public class ParserRSS implements IParserRSS {
     public NewsData[] parseRSS(InputStream inputStream) throws ParsingException, IOException {
         NodeList itemList;
         try {
-            Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(inputStream);
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+            factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+            factory.setExpandEntityReferences(false);
+
+            Document doc = factory.newDocumentBuilder().parse(inputStream);
             doc.getDocumentElement().normalize();
             itemList = doc.getElementsByTagName("item");
         } catch (ParserConfigurationException | SAXException e) {
@@ -60,7 +66,7 @@ public class ParserRSS implements IParserRSS {
                     description = fullText.or(() -> content);
                 }
                 title = title.transform(txt -> TextUtil.checkAddLastDot(TextUtil.trimTail(txt)));
-                description = description.map(txt -> TextUtil.trimTail(txt));
+                description = description.map(TextUtil::trimTail);
                 String extId = guid.orElse(link);
 
                 Optional<Timestamp> pubDate;

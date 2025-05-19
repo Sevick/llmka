@@ -60,6 +60,8 @@ llmka:
   shutdown_delay_msec: 30000
   newssource_header: "NEWS_SOURCE_ID"
   newsdata_header: "NEWS_DATA_ID"
+  integration:
+    queue_suffix: "_Q"
   maintenance:
     news_group: "Maintenance"
   threads:
@@ -120,8 +122,8 @@ llmka:
       reject_explain_header: "RejectExplain"
     metacheck:
       enabled: true
-      metahash_size_limit: 2048
-      metahash_size_core: 1024
+      metahash_size_limit: 500
+      metahash_size_core: 400
       schema_bean_prefix: "newsCheckMetaSchema"
     datacheck:
       enabled: true

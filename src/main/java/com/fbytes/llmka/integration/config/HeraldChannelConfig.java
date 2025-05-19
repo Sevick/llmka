@@ -116,7 +116,7 @@ public class HeraldChannelConfig implements ApplicationListener<ContextRefreshed
             PollableChannel heraldChannel = new QueueChannel(defaultQueueSize);
             String qName = heraldQueueName(IHeraldNameService.makeFullName(heraldConfig));
             applicationContext.registerBean(qName, PollableChannel.class, () -> heraldChannel);
-            applicationContext.getAutowireCapableBeanFactory().autowireBean(applicationContext.getBean(qName));
+            //applicationContext.getAutowireCapableBeanFactory().autowireBean(applicationContext.getBean(qName));
 
             // TODO: Add captor
             //queueChannel.registerMetricsCaptor(new MicrometerMetricsCaptor(meterRegistry));

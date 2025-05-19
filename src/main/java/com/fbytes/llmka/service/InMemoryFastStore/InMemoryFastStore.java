@@ -78,7 +78,7 @@ public class InMemoryFastStore<Embedded> implements EmbeddingStore<Embedded> {
     @Override
     public void removeAll(Collection<String> ids) {
         ValidationUtils.ensureNotEmpty(ids, "ids");
-        ids.forEach(id -> entries.remove(id));
+        ids.forEach(entries::remove);
     }
 
 

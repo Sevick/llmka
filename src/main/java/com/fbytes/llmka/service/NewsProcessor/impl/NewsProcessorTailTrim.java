@@ -4,7 +4,6 @@ import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.NewsData;
 import com.fbytes.llmka.service.NewsProcessor.INewsProcessor;
 import io.micrometer.core.annotation.Timed;
-import io.micrometer.tracing.annotation.NewSpan;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;

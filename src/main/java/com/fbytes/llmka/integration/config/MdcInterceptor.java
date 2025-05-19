@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 
 @Service
-@GlobalChannelInterceptor(patterns = {"*_Q"})
+@GlobalChannelInterceptor(patterns = {"*${llmka.integration.queue_suffix}"})
 public class MdcInterceptor implements ChannelInterceptor {
     private static final Logger logger = Logger.getLogger(MdcInterceptor.class);
 

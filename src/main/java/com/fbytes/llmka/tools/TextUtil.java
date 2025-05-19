@@ -37,7 +37,6 @@ public class TextUtil {
             "\\.\\.\\."
     };
     private static String regexTrashTails = "(?:" + String.join("|", trashTails) + ")\\s*[\\.,;]*$";
-    //private static String regexTrashTails = String.join("|", trashTails) + "[\\.,;]?$";
     private static Pattern patternTrashTails = Pattern.compile(regexTrashTails);
 
 
@@ -95,7 +94,6 @@ public class TextUtil {
 
     public static String normalize(String src) {
         String normalized = Normalizer.normalize(src, Normalizer.Form.NFD);
-        //normalized = normalized.toLowerCase();
         normalized = normalized.trim().replaceAll("\\s+", " ");
         return normalized;
     }
@@ -123,10 +121,6 @@ public class TextUtil {
 
 
     public static JsonSchema genJsonSchemaFromClass(Class clazz) throws JsonMappingException {
-//        ObjectMapper objectMapper = new ObjectMapper();
-//        com.fasterxml.jackson.databind.jsonschema.JsonSchema jacksonSchema = objectMapper.generateJsonSchema(clazz);
-//        JsonNode schemaNode = objectMapper.valueToTree(jacksonSchema);
-
         ObjectMapper mapper = new ObjectMapper();
         SchemaFactoryWrapper visitor = new SchemaFactoryWrapper();
         mapper.acceptJsonFormatVisitor(clazz, visitor);

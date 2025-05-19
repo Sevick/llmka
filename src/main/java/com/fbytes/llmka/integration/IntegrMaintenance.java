@@ -46,16 +46,16 @@ public class IntegrMaintenance {
     @Bean
     public org.springframework.integration.dsl.IntegrationFlow maintenanceHeraldFlow() {
         return org.springframework.integration.dsl.IntegrationFlow.from("appEventChannel")
-                .transform(AppEvent.class, appEvent -> {
-                    return NewsData.builder()
+                .transform(AppEvent.class, appEvent ->
+                    NewsData.builder()
                             .id(appEvent.getId())
                             .extID("AppEvent")
                             .title(appEvent.getEventType().toString())
                             .description(Optional.of(String.valueOf(appEvent.getInstance())))
                             .dataSourceName(appName)
                             .link("http://fbytes.com")
-                            .build();
-                })
+                            .build()
+                )
                 .enrichHeaders(h -> h
                         .headerFunction(newsGroupHeader, m -> maintenanceGroup)
                 )

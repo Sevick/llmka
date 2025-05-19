@@ -31,7 +31,7 @@ public class NewsCheckMeta implements INewsCheck, INewsIDStore {
     private String schemaBeanPrefix;
 
     @Autowired
-    GenericApplicationContext context;
+    private GenericApplicationContext context;
 
     private final ConcurrentMap<String, NewsCheckMetaSchema> metaHash = new ConcurrentHashMap<>();   // <MD5, <seq#, id>>
 
@@ -51,7 +51,9 @@ public class NewsCheckMeta implements INewsCheck, INewsIDStore {
         context.registerBean(beanName, NewsCheckMetaSchema.class, () -> {
             return new NewsCheckMetaSchema(schema);
         });
-        return (NewsCheckMetaSchema) context.getBean(beanName);
+        NewsCheckMetaSchema bean = (NewsCheckMetaSchema) context.getBean(beanName);
+        //context.getAutowireCapableBeanFactory().autowireBean(bean);
+        return bean;
     }
 
     @Override

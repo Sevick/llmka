@@ -3,7 +3,7 @@
     <option name="MAIN_CLASS_NAME" value="com.fbytes.llmka.LLMka" />
     <module name="LLMka" />
     <option name="PROGRAM_PARAMETERS" value="--spring.config.location=$PROJECT_DIR$/src/main/resources/ --spring.profiles.active=dev,metrics" />
-    <option name="VM_PARAMETERS" value="-Dlogging.config=$PROJECT_DIR$/src/main/resources/log4j2.xml -XX:+EnableDynamicAgentLoading" />
+    <option name="VM_PARAMETERS" value="-Dlogging.config=$PROJECT_DIR$/src/main/resources/log4j2.xml -XX:+EnableDynamicAgentLoading -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9010 -Dcom.sun.management.jmxremote.rmi.port=9010 -Dcom.sun.management.jmxremote.local.only=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="com.fbytes.llmka.config.*" />

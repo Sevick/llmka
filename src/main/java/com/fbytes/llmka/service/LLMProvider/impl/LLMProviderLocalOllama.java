@@ -2,7 +2,6 @@ package com.fbytes.llmka.service.LLMProvider.impl;
 
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.service.LLMProvider.LLMProvider;
-import com.fbytes.llmka.tools.protect.semaphore.SemaphoreGuard;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
@@ -78,8 +77,7 @@ public class LLMProviderLocalOllama extends LLMProvider {
         try {
             ChatResponse chatResponse = model.chat(ChatRequest.builder().messages(messages).build());
             return chatResponse.aiMessage().text();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             logger.error("Error while calling LLM: ", e.getMessage());
             throw new RuntimeException("Error while calling LLM: " + e.getMessage(), e);
         }

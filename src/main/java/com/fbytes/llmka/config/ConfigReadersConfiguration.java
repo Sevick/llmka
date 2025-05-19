@@ -28,17 +28,17 @@ public class ConfigReadersConfiguration {
 
     @Bean
     public ConfigReader<HeraldConfig> heraldConfigReader() {
-        return new ConfigReader<HeraldConfig>(ignoreInvalidConfig);
+        return new ConfigReader<>(ignoreInvalidConfig);
     }
 
     @Bean
     public ConfigReader<NewsSource> newsSourceConfigReader() {
-        return new ConfigReader<NewsSource>(ignoreInvalidConfig);
+        return new ConfigReader<>(ignoreInvalidConfig);
     }
 
     @Bean
     public ConfigReader<NewsGroup> newsGroupsConfigReader() {
-        return new ConfigReader<NewsGroup>(ignoreInvalidConfig);
+        return new ConfigReader<>(ignoreInvalidConfig);
     }
 
 
