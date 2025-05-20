@@ -1,4 +1,4 @@
-package com.fbytes.llmka.service.Herald.impl;
+package com.fbytes.llmka.service.Herald.telegram;
 
 import com.fbytes.llmka.config.TelegramBotConfig;
 import com.fbytes.llmka.logger.Logger;
@@ -38,7 +38,7 @@ public class HeraldTelegram extends Herald<TelegramMessage> {
 
 
     public HeraldTelegram(HeraldConfigTelegram heraldConfigTelegram) {
-        super(heraldConfigTelegram.getName(), "TELEGRAM");
+        super(heraldConfigTelegram.getName(), "TELEGRAM", TelegramMessage.class);
         this.botUsername = heraldConfigTelegram.getBot();
     }
 

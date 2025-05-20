@@ -29,12 +29,6 @@ public class EmbeddedStoreService implements IEmbeddedStoreService {
     private final ConcurrentMap<String, IEmbeddedStore> embeddedStoreMap = new ConcurrentHashMap<>(); // <schema, store>
 
 
-    @PreDestroy
-    private void onShutdown() {
-        embeddedStoreMap.forEach((key, value) -> value.save());
-    }
-
-
     private IEmbeddedStore createSchemaStore(String schema) {
         String beanName = "newsStore-" + schema;
         return embeddedStoreMap.computeIfAbsent(schema, name -> {

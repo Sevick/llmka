@@ -147,6 +147,8 @@ public class TextUtil {
                 .replaceAll("\\*\\*(.*?)\\*\\*", "$1") // Remove bold
                 .replaceAll("\\*(.*?)\\*", "$1") // Remove italic
                 .replaceAll("\\[.*?\\]\\(.*?\\)", ""); // Remove links
+        cleanText.replaceAll(".", "\\.");
+
         return cleanText.trim();
     }
 

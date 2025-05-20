@@ -26,7 +26,7 @@ import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.Optional;
 
-@EnabledIf(expression = "#{environment.acceptsProfiles('integration')}", reason = "Runs only for integration profile")
+@EnabledIf(expression = "#{environment.acceptsProfiles('integration')}", reason = "Runs only on integration profile")
 @SpringBootTest(classes = {LLMProviderLocalOllama.class, LLMService.class, NewsProcessorBrief.class, ParserRSS.class})
 @ContextConfiguration(classes = {TestConfig.class})
 class BriefIntegrationTest {

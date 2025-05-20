@@ -2,6 +2,7 @@ package com.fbytes.llmka.service.EmbeddedStore.dao;
 
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.service.InMemoryFastStore.InMemoryFastStore;
+import com.fbytes.llmka.tools.FileUtil;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.rag.content.Content;
@@ -84,6 +85,7 @@ public class EmbeddedStore implements IEmbeddedStore {
     @PreDestroy
     public void onShutdown() {
         logger.debug("[{}] Finalizing store", storeName);
+        save();
         if (storeSizeGauge != null)
             Metrics.globalRegistry.remove(storeSizeGauge);
     }
@@ -186,18 +188,6 @@ public class EmbeddedStore implements IEmbeddedStore {
         }
     }
 
-    private void save(String storeFilePath) {
-        logger.info("[{}] Saving store to: {}", storeName, storeFilePath);
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(storeFilePath))) {
-            writer.write(embeddingStore.serializeToJson());
-        } catch (IOException e) {
-            logger.logException(e);
-        }
-    }
-
-    public void save() {
-        save(storeFilePath);
-    }
 
     @Override
     public boolean removeStorage() {
@@ -207,6 +197,23 @@ public class EmbeddedStore implements IEmbeddedStore {
         }
         return result;
     }
+
+
+    public void save() {
+        save(storeFilePath);
+    }
+
+
+    private void save(String storeFilePath) {
+        logger.info("[{}] Saving store to: {}", storeName, storeFilePath);
+        FileUtil.moveToBackup(storeFilePath);
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(storeFilePath))) {
+            writer.write(embeddingStore.serializeToJson());
+        } catch (IOException e) {
+            logger.logException(e);
+        }
+    }
+
 
     private void restore(String storeFilePath) {
         try {

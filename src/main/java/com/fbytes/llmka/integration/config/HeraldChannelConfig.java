@@ -113,7 +113,8 @@ public class HeraldChannelConfig implements ApplicationListener<ContextRefreshed
             outchannelToHeraldServiceMap.computeIfAbsent(heraldConfig.getChannel(), key -> new ArrayList<>())
                     .add(newHeraldPair);
 
-            PollableChannel heraldChannel = new QueueChannel(defaultQueueSize);
+            QueueChannel heraldChannel = new QueueChannel(defaultQueueSize);
+            heraldChannel.setDatatypes(createdHeraldService.getMessageType());
             String qName = heraldQueueName(IHeraldNameService.makeFullName(heraldConfig));
             applicationContext.registerBean(qName, PollableChannel.class, () -> heraldChannel);
             //applicationContext.getAutowireCapableBeanFactory().autowireBean(applicationContext.getBean(qName));
@@ -158,7 +159,7 @@ public class HeraldChannelConfig implements ApplicationListener<ContextRefreshed
                         .from(heraldQueueChannel)
                         .handle(message -> {
                                     try {
-                                        herald.getRight().sendMessage(TelegramMessage.fromNewsData((NewsData) message.getPayload()));
+                                        herald.getRight().sendMessage((HeraldMessage) message.getPayload());
                                     } catch (IHerald.SendMessageException e) {
                                         heraldQueueChannel.send(message);   // requeue
                                     }

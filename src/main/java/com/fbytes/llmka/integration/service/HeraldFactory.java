@@ -6,7 +6,7 @@ import com.fbytes.llmka.model.config.heraldchannel.HeraldConfigTelegram;
 import com.fbytes.llmka.model.heraldmessage.HeraldMessage;
 import com.fbytes.llmka.service.Herald.Herald;
 import com.fbytes.llmka.service.Herald.IHeraldNameService;
-import com.fbytes.llmka.service.Herald.impl.HeraldTelegram;
+import com.fbytes.llmka.service.Herald.telegram.HeraldTelegram;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.stereotype.Service;

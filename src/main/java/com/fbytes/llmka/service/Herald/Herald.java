@@ -9,5 +9,5 @@ import lombok.Getter;
 public abstract class Herald<T extends HeraldMessage> implements IHerald<T> {
     private String name;
     private String type;
-
+    private Class messageType;
 }

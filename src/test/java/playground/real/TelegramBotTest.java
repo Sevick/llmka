@@ -4,7 +4,7 @@ import com.fbytes.llmka.LLMka;
 import com.fbytes.llmka.config.TelegramBotConfig;
 import com.fbytes.llmka.model.config.heraldchannel.HeraldConfigTelegram;
 import com.fbytes.llmka.model.heraldmessage.TelegramMessage;
-import com.fbytes.llmka.service.Herald.impl.HeraldTelegram;
+import com.fbytes.llmka.service.Herald.telegram.HeraldTelegram;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
