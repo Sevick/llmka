@@ -120,10 +120,10 @@ public class NewsCheckMetaSchema implements INewsCheck, INewsIDStore {
 
             logger.info("[{}] Compressing metaHash. Current size: {}", schema, metaHash.size());
             entriesArr = metaHash.entrySet().toArray(new Map.Entry[0]);
-            Arrays.sort(entriesArr, Map.Entry.<BigInteger, Pair<Integer, String>>comparingByValue().reversed());
+            Arrays.sort(entriesArr, Map.Entry.<BigInteger, Pair<Integer, String>>comparingByValue());   // ascending order by seq#
 
             metaHashSeq.set(0);
-            newMetaHash = Arrays.stream(entriesArr, 0, targetSize)
+            newMetaHash = Arrays.stream(entriesArr, entriesArr.length - targetSize, entriesArr.length)
                     .collect(Collectors.toMap(Map.Entry::getKey,
                             entry -> Pair.of(metaHashSeq.getAndIncrement(), entry.getValue().getRight()),    // replace seq#
                             (existing, replacement) -> existing,

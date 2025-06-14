@@ -15,6 +15,7 @@ spring:
       - secret.yaml
   application:
     name: LLMka
+    version: 0.93
   main:
     banner-mode: "console" # Disable the startup banner: console/log/off
 

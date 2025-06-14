@@ -4,8 +4,7 @@ import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.NewsData;
 import com.fbytes.llmka.model.config.newssource.NewsSource;
 import com.fbytes.llmka.service.DataRetrieverService.IDataRetrieveService;
-import org.apache.logging.log4j.ThreadContext;
-import org.slf4j.MDC;
+import com.fbytes.llmka.service.Maintenance.MDC.IMDCService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,6 +29,9 @@ public class StepProcessNewsSource {
     @Value("${llmka.newsdata_header}")
     private String newsDataHeader;
 
+    @Autowired
+    private IMDCService mdcService;
+
 
     @Bean(name = "newsSourceChannel")
     public MessageChannel newsSourceChannel() {
@@ -50,13 +52,11 @@ public class StepProcessNewsSource {
         return IntegrationFlow
                 .from("newsSourceChannel")
                 .enrichHeaders(h -> h
-                        .headerFunction(newsGroupHeader,m -> ((NewsSource) m.getPayload()).getGroup())
+                        .headerFunction(newsGroupHeader, m -> ((NewsSource) m.getPayload()).getGroup())
                         .headerFunction(newsSourceHeader, m -> ((NewsSource) m.getPayload()).getId())
                 )
                 .handle((payload, headers) -> {
-                    MDC.put(newsSourceHeader, (String) headers.get(newsSourceHeader));
-                    ThreadContext.remove(newsDataHeader);
-                    ThreadContext.put(newsSourceHeader, (String) headers.get(newsSourceHeader));
+                    mdcService.setMDC(newsSourceHeader, (String) headers.get(newsSourceHeader));
                     return MessageBuilder
                             .withPayload(payload)
                             .copyHeaders(headers)
@@ -67,7 +67,7 @@ public class StepProcessNewsSource {
                 .transform((Optional<Stream<NewsData>> opt) -> opt.get())
                 .split()    // headers copied to each message
                 .enrichHeaders(h -> h
-                        .headerFunction(newsDataHeader,m -> ((NewsData) m.getPayload()).getId())
+                        .headerFunction(newsDataHeader, m -> ((NewsData) m.getPayload()).getId())
                 )
                 .channel("newsDataChannelOut")
                 .get();

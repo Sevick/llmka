@@ -11,16 +11,19 @@ public abstract class LLMProvider implements ILLMProvider {
     private static final Logger logger = Logger.getLogger(LLMProvider.class);
 
     private final String name;
-    private final MeterRegistry meterRegistry;
-    private Counter wordsInCounter;
-    private Counter wordsOutCounter;
+    private final Optional<MeterRegistry> meterRegistry;
+    private Optional<Counter> wordsInCounter;
+    private Optional<Counter> wordsOutCounter;
 
     public LLMProvider(String name, MeterRegistry meterRegistry) {
         this.name = name;
-        this.meterRegistry = meterRegistry;
-        if (meterRegistry != null) {
-            wordsInCounter = Counter.builder("llmka.llmprovider.localollama.wordsin.count").register(meterRegistry);
-            wordsOutCounter = Counter.builder("llmka.llmprovider.localollama.wordsout.count").register(meterRegistry);
+        this.meterRegistry = Optional.of(meterRegistry);
+        if (!this.meterRegistry.isEmpty()) {
+            wordsInCounter = Optional.of(Counter.builder(String.format("llmka.llmprovider.%f.wordsin.count", name)).register(meterRegistry));
+            wordsOutCounter = Optional.of(Counter.builder(String.format("llmka.llmprovider.%f.wordsout.count", name)).register(meterRegistry));
+        } else {
+            wordsInCounter = Optional.empty();
+            wordsOutCounter = Optional.empty();
         }
     }
 
@@ -32,11 +35,11 @@ public abstract class LLMProvider implements ILLMProvider {
 
     @Override
     public String askLLM(Optional<String> systemPrompt, String userPrompt, Optional<ResponseFormat> responseFormat) {
-        wordsInCounter.increment(userPrompt.split("[\\s,;:.]+").length);
+        wordsInCounter.ifPresent(cnt -> cnt.increment(userPrompt.split("[\\s,;:.]+").length));
         logger.debug("[{}] [{}] LLMProvider askLLM systemPrompt: {}, userPrompt: {}", getName(), Thread.currentThread().getName(), systemPrompt.orElse(""), userPrompt);
         String result = askLLMImpl(systemPrompt, userPrompt, responseFormat);
         logger.debug("[{}] [{}] LLMProvider askLLM result: {}", getName(), Thread.currentThread().getName(), result);
-        wordsOutCounter.increment(result.split("[\\s,;:.]+").length);
+        wordsOutCounter.ifPresent(cnt -> cnt.increment(result.split("[\\s,;:.]+").length));
         return result;
     }
 }
