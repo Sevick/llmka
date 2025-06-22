@@ -1,10 +1,11 @@
-package com.fbytes.llmka.service.NewsProcessor.impl;
+package com.fbytes.llmka.service.NewsProcessor.impl.LastSentence;
 
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.NewsData;
 import com.fbytes.llmka.service.LLMProvider.ILLMProvider;
 import com.fbytes.llmka.service.LLMService.ILLMService;
 import com.fbytes.llmka.service.NewsProcessor.INewsProcessor;
+import com.fbytes.llmka.service.NewsProcessor.impl.NewsProcessor;
 import com.fbytes.llmka.tools.TextUtil;
 import io.micrometer.core.annotation.Timed;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,40 +16,46 @@ import org.springframework.stereotype.Service;
 import java.text.MessageFormat;
 import java.util.Optional;
 
-@Service
-@Qualifier("NewsProcessorLastSentence")
+//@Service
+//@Qualifier("NewsProcessorLastSentence")
 public class NewsProcessorLastSentence extends NewsProcessor implements INewsProcessor {
     private static final Logger logger = Logger.getLogger(NewsProcessorLastSentence.class);
 
-    private final Optional<String> iscompleteSystemPrompt;
-    private final Optional<String> hasfactsSystemPrompt;
-    private final Optional<String> rewriteSystemPrompt;
     @Value("${llmka.lastsentence.enabled:true}")
     private Boolean serviceEnabled;
     @Value("${llmka.lastsentence.min_sentence_words_count:4}")
     private Integer minSentenceWordsCount;
-    @Value("${llmka.lastsentence.iscomplete.prompt.user}")
-    private String iscompleteUserPrompt;
-    @Value("${llmka.lastsentence.hasfacts.prompt.user}")
-    private String hasfactsUserPrompt;
-    @Value("${llmka.lastsentence.rewrite.prompt.user}")
-    private String rewriteUserPrompt;
+
+    private final String iscompleteUserPrompt;
+    private final String hasfactsUserPrompt;
+    private final String rewriteUserPrompt;
+    private final Optional<String> iscompleteSystemPrompt;
+    private final Optional<String> hasfactsSystemPrompt;
+    private final Optional<String> rewriteSystemPrompt;
 
 
     private final ILLMProvider llmProvider;
 
 
-    public NewsProcessorLastSentence(@Autowired ILLMService illmService,
-                                       @Value("${llmka.lastsentence.llm_provider}") String llmProviderName,
-                                       @Value("${llmka.lastsentence.iscomplete.prompt.system:null}") String iscompleteSystemPrompt,
-                                       @Value("${llmka.lastsentence.hasfacts.prompt.system:null}") String hasfactsSystemPrompt,
-                                       @Value("${llmka.lastsentence.rewrite.prompt.system:null}") String rewriteSystemPrompt) {
+    public NewsProcessorLastSentence(ILLMService illmService,
+                                       String llmProviderName,
+                                       String iscompleteSystemPrompt,
+                                       String iscompleteUserPrompt,
+                                       String hasfactsSystemPrompt,
+                                       String hasfactsUserPrompt,
+                                       String rewriteSystemPrompt,
+                                       String rewriteUserPrompt
+    ) {
 
         this.llmProvider = illmService.findProvider(llmProviderName);
 
         this.iscompleteSystemPrompt = TextUtil.stringToOptional(iscompleteSystemPrompt);
         this.hasfactsSystemPrompt = TextUtil.stringToOptional(hasfactsSystemPrompt);
         this.rewriteSystemPrompt = TextUtil.stringToOptional(rewriteSystemPrompt);
+
+        this.iscompleteUserPrompt = iscompleteUserPrompt;
+        this.hasfactsUserPrompt = hasfactsUserPrompt;
+        this.rewriteUserPrompt = rewriteUserPrompt;
     }
 
 

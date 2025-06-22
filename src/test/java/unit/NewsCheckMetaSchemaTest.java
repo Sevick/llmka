@@ -6,18 +6,17 @@ import com.fbytes.llmka.model.appevent.AppEvent;
 import com.fbytes.llmka.model.appevent.AppEventMetahashCompress;
 import com.fbytes.llmka.service.Maintenance.AppEventSenderService.IAppEventSenderService;
 import com.fbytes.llmka.service.NewsCheck.INewsCheck;
+import com.fbytes.llmka.service.NewsCheck.impl.ISchemaMetaServiceFactory;
 import com.fbytes.llmka.service.NewsCheck.impl.NewsCheckMetaSchema;
+import com.fbytes.llmka.service.NewsCheck.impl.SchemaMetaServiceFactory;
 import config.TestConfig;
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.integration.channel.NullChannel;
-import org.springframework.messaging.MessageChannel;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.util.Assert;
 
 import java.lang.reflect.Field;
@@ -35,35 +34,29 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-@SpringBootTest(classes = {NewsCheckMetaSchemaTest.NewsCheckMetaSchemaTestConf.class})
-@ContextConfiguration(classes = {TestConfig.class})
+@SpringJUnitConfig(classes = {TestConfig.class, SchemaMetaServiceFactory.class})
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class NewsCheckMetaSchemaTest {
     private static final Logger logger = Logger.getLogger(NewsCheckMetaSchemaTest.class);
 
+    @MockitoBean
+    IAppEventSenderService<AppEvent> appEventSender;
+
     @Autowired
+    ISchemaMetaServiceFactory schemaMetaServiceFactory;
+
     private NewsCheckMetaSchema newsCheckMetaSchema;
 
-    @MockitoBean
-    IAppEventSenderService<AppEvent> appEventSenderSpringIntegration;
-
-    @TestConfiguration
-    static class NewsCheckMetaSchemaTestConf {
-        @Bean
-        public NewsCheckMetaSchema newsCheckMetaSchema() {
-            return new NewsCheckMetaSchema("testschema");
-        }
-
-        @Bean
-        public MessageChannel appEventChannel() {
-            return new NullChannel();
-        }
+    @BeforeAll
+    void init() {
+        newsCheckMetaSchema = schemaMetaServiceFactory.createSchemaMetaService("testschema");
     }
-
 
     @Test
     void metaHashCompressionTest() {
-        final int targetSize = 5;
+        NewsCheckMetaSchema newsCheckMetaSchema = schemaMetaServiceFactory.createSchemaMetaService("testschema");
 
+        final int targetSize = 5;
         Map<BigInteger, Pair<Integer, String>> testMetaHash = new ConcurrentHashMap<>();
         for (int i = 100; i < 120; i++) {
             testMetaHash.put(BigInteger.valueOf(i), Pair.of(i, String.valueOf(i)));
@@ -98,7 +91,7 @@ class NewsCheckMetaSchemaTest {
         Set<String> restIds = newHashMap.values().stream().map(item -> item.getRight()).collect(Collectors.toSet());
         removedIDs.forEach(id -> Assert.isTrue(!restIds.contains(id), "ID from removeID list found in new map: " + id));
 
-        verify(appEventSenderSpringIntegration, times(1)).sendEvent(any(AppEventMetahashCompress.class));
+        verify(appEventSender, times(1)).sendEvent(any(AppEventMetahashCompress.class));
     }
 
 

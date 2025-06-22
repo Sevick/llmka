@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.core.MessageSelector;
 import org.springframework.integration.support.MessageBuilder;
+import org.springframework.messaging.Message;
 
 import java.text.MessageFormat;
 
@@ -22,6 +23,9 @@ public class MainIntegrationFlow {
     private String rejectExplainHeader;
     @Value("${llmka.newsdata_header}")
     private String newsDataHeader;
+
+    @Value("${llmka.brief.description_size_limit}")
+    private Integer descriptionSizeLimit;
 
     @Bean
     public org.springframework.integration.dsl.IntegrationFlow bridgeDataCheck() {
@@ -61,15 +65,22 @@ public class MainIntegrationFlow {
     public org.springframework.integration.dsl.IntegrationFlow bridgeCheckAd() {
         return org.springframework.integration.dsl.IntegrationFlow
                 .from("newsCheckAdChannelOut")
-                .channel("lastSentenceChannel")
+                .route(Message.class, msg -> {
+                    if (((NewsData) msg.getPayload()).getDescription().get().length() > descriptionSizeLimit) {
+                        return "briefChannel";
+                    } else {
+                        return "lastSentenceChannel";
+                    }
+                })
                 .get();
     }
+
 
     @Bean
     public org.springframework.integration.dsl.IntegrationFlow bridgeLastSentence() {
         return org.springframework.integration.dsl.IntegrationFlow
                 .from("lastSentenceChannelOut")
-                .channel("briefChannel")
+                .channel("heraldChannel_Q")
                 .get();
     }
 

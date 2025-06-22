@@ -19,8 +19,8 @@ public abstract class LLMProvider implements ILLMProvider {
         this.name = name;
         this.meterRegistry = Optional.of(meterRegistry);
         if (!this.meterRegistry.isEmpty()) {
-            wordsInCounter = Optional.of(Counter.builder(String.format("llmka.llmprovider.%f.wordsin.count", name)).register(meterRegistry));
-            wordsOutCounter = Optional.of(Counter.builder(String.format("llmka.llmprovider.%f.wordsout.count", name)).register(meterRegistry));
+            wordsInCounter = Optional.of(Counter.builder(String.format("llmka.llmprovider.%s.wordsin.count", name)).register(meterRegistry));
+            wordsOutCounter = Optional.of(Counter.builder(String.format("llmka.llmprovider.%s.wordsout.count", name)).register(meterRegistry));
         } else {
             wordsInCounter = Optional.empty();
             wordsOutCounter = Optional.empty();

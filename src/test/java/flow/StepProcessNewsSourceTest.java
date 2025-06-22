@@ -8,6 +8,7 @@ import com.fbytes.llmka.model.config.newssource.NewsSource;
 import com.fbytes.llmka.service.DataRetrieverService.DataRetrieveService;
 import com.fbytes.llmka.service.DataRetriver.DataRetriever;
 import com.fbytes.llmka.service.DataRetriver.IDataRetriever;
+import com.fbytes.llmka.service.Maintenance.MDC.MDCService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -32,7 +33,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Stream;
 
 @SpringBootTest
-@ContextConfiguration(classes = {StepProcessNewsSource.class, ChannelsConfig.class, DataRetrieveService.class, StepProcessNewsSourceTest.TestConfig.class})
+@ContextConfiguration(classes = {StepProcessNewsSource.class, ChannelsConfig.class, DataRetrieveService.class, StepProcessNewsSourceTest.TestConfig.class, MDCService.class})
 class StepProcessNewsSourceTest {
     private static final Logger logger = Logger.getLogger(StepProcessNewsSourceTest.class);
 
@@ -47,7 +48,7 @@ class StepProcessNewsSourceTest {
     @Qualifier("newsDataChannelOut")
     private DirectChannel newsDataChannelOut;
 
-    private static final NewsData[] resultData = new NewsData[] {
+    private static final NewsData[] resultData = new NewsData[]{
             NewsData.builder()
                     .id("ID1")
                     .dataSourceID("DataSourceID")
@@ -94,7 +95,7 @@ class StepProcessNewsSourceTest {
         int outMessagesCount = testMessageHandler.getConcurrentLinkedQueue().size();
         Assert.isTrue(outMessagesCount == resultData.length, MessageFormat.format("Number of messages reached output channel: {0}, Expected: {1}", outMessagesCount, resultData.length));
         Assert.isTrue(testMessageHandler.getConcurrentLinkedQueue().stream()
-                        .allMatch(msg -> msg.getPayload() instanceof NewsData), "All payload should be of type NewsData");
+                .allMatch(msg -> msg.getPayload() instanceof NewsData), "All payload should be of type NewsData");
         Assert.isTrue(testMessageHandler.getConcurrentLinkedQueue().stream()
                 .allMatch(msg -> msg.getHeaders().get(newsGroupHeader).equals(testNewsSourceGroupStr)), MessageFormat.format("Grouping header should be add to all output items: {0}", newsGroupHeader));
     }

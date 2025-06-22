@@ -15,10 +15,16 @@ spring:
       - secret.yaml
   application:
     name: LLMka
-    version: 0.93
+    version: 0.94
   main:
     banner-mode: "console" # Disable the startup banner: console/log/off
+  banner:
+    location: classpath:banner.txt
 
+aws:
+  region: ${secret.llm_provider.bedrock.region}
+  access-key: ${secret.llm_provider.bedrock.access_key}
+  secret-key: ${secret.llm_provider.bedrock.secret_key}
 
 management:
 #  server:
@@ -93,6 +99,10 @@ llmka:
       model_name: ${secret.llm_provider.ollama_onprem.model_name}
       base_url: ${secret.llm_provider.ollama_onprem.base_url}
       timeout: PT6m
+    bedrock:
+      role_arn: ${secret.llm_provider.bedrock.role_arn}
+      model_name: ${secret.llm_provider.bedrock.model_name}
+      timeout: PT2m
   brief:
     llm_provider: "LocalOllama"
     description_size_limit: 200
@@ -123,8 +133,8 @@ llmka:
       reject_explain_header: "RejectExplain"
     metacheck:
       enabled: true
-      metahash_size_limit: 500
-      metahash_size_core: 400
+      metahash_size_limit: 1000
+      metahash_size_core: 900
       schema_bean_prefix: "newsCheckMetaSchema"
     datacheck:
       enabled: true
@@ -144,6 +154,7 @@ llmka:
     telegram:
       rate_per_sec: 0.03
       poll_delay: PT10s
+      message_format: "*%s* %s\t([%s](%s))%s"
       bot:
         botparams:
           aigestsupportbot:

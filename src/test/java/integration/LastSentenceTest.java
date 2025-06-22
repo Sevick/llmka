@@ -5,7 +5,7 @@ import com.fbytes.llmka.model.NewsData;
 import com.fbytes.llmka.service.LLMProvider.impl.LLMProviderLocalOllama;
 import com.fbytes.llmka.service.LLMService.LLMService;
 import com.fbytes.llmka.service.NewsProcessor.INewsProcessor;
-import com.fbytes.llmka.service.NewsProcessor.impl.NewsProcessorLastSentence;
+import com.fbytes.llmka.service.NewsProcessor.impl.LastSentence.NewsProcessorLastSentence;
 import config.TestConfig;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
@@ -96,7 +96,7 @@ class LastSentenceTest {
                 .id("lastSentenceTest4")
                 .link("http://dddd.llll.zz")
                 .title("В Бат-Яме задержали мужчину с заряженным пистолетом.")
-                .description(Optional.of("Полиция сообщила, что в рамках борьбы с криминалом в Бат-Яме был задержан мужчина (21) с заряженным пистолетом калибра 9 мм."))
+                .description(Optional.of("Полиция сообщила, что в рамках борьбы с криминалом в Бат-Яме был задержан мужчина (21) с заряженным пистолетом калибра 9 мм"))
                 .build();
 
         NewsData result = lastSentenceProcessor.process(newsData);

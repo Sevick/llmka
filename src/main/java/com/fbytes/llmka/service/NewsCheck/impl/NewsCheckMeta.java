@@ -27,33 +27,23 @@ public class NewsCheckMeta implements INewsCheck, INewsIDStore {
     private Integer metaHashSizeLimit;
     @Value("${llmka.newscheck.metacheck.metahash_size_core:32}")
     private Integer metaHashSizeCore;
-    @Value("${llmka.newscheck.metacheck.schema_bean_prefix}")
-    private String schemaBeanPrefix;
+
 
     @Autowired
     private GenericApplicationContext context;
+    @Autowired
+    private ISchemaMetaServiceFactory schemaMetaServiceFactory;
 
-    private final ConcurrentMap<String, NewsCheckMetaSchema> metaHash = new ConcurrentHashMap<>();   // <MD5, <seq#, id>>
+    private final ConcurrentMap<String, NewsCheckMetaSchema> metaHash = new ConcurrentHashMap<>();   // <schemaName, NewsCheckMetaSchema>
 
     @Override
     @ParamTimedMetric(key = "schema")
     public Optional<RejectReason> checkNews(String schema, NewsData newsData) {
         if (!serviceEnabled)
             return Optional.empty();
-        NewsCheckMetaSchema newsCheckMetaSchema = metaHash.computeIfAbsent(schema, str -> createSchemaMetaService(schema));
+        NewsCheckMetaSchema newsCheckMetaSchema = metaHash.computeIfAbsent(schema, str -> schemaMetaServiceFactory.createSchemaMetaService(schema));
         logger.debug("metaHash check");
         return newsCheckMetaSchema.checkNews(schema, newsData);
-    }
-
-    public NewsCheckMetaSchema createSchemaMetaService(String schema) {
-        logger.debug("[{}] Creating NewsCheckMetaSchema", schema);
-        String beanName = schemaBeanPrefix + schema;
-        context.registerBean(beanName, NewsCheckMetaSchema.class, () -> {
-            return new NewsCheckMetaSchema(schema);
-        });
-        NewsCheckMetaSchema bean = (NewsCheckMetaSchema) context.getBean(beanName);
-        //context.getAutowireCapableBeanFactory().autowireBean(bean);
-        return bean;
     }
 
     @Override

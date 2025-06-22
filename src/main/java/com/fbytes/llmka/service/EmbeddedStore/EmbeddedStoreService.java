@@ -23,20 +23,16 @@ import java.util.concurrent.ConcurrentMap;
 public class EmbeddedStoreService implements IEmbeddedStoreService {
     private static final Logger logger = Logger.getLogger(EmbeddedStoreService.class);
 
-    @Autowired
-    private GenericApplicationContext applicationContext;
-
+    private final ISchemaStoreFactory schemaStoreFactory;
     private final ConcurrentMap<String, IEmbeddedStore> embeddedStoreMap = new ConcurrentHashMap<>(); // <schema, store>
 
+    public EmbeddedStoreService(@Autowired ISchemaStoreFactory schemaStoreFactory) {
+        this.schemaStoreFactory = schemaStoreFactory;
+    }
 
     private IEmbeddedStore createSchemaStore(String schema) {
         String beanName = "newsStore-" + schema;
-        return embeddedStoreMap.computeIfAbsent(schema, name -> {
-            applicationContext.registerBean(beanName, EmbeddedStore.class, () ->
-                    new EmbeddedStore(name, true)
-            );
-            return (IEmbeddedStore) applicationContext.getBean(beanName);
-        });
+        return embeddedStoreMap.computeIfAbsent(schema, name -> schemaStoreFactory.createEmbeddedStoreService(name));
     }
 
     @Override

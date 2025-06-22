@@ -2,6 +2,7 @@ package com.fbytes.llmka.service.LLMProvider.impl;
 
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.service.LLMProvider.LLMProvider;
+import com.fbytes.llmka.tools.protect.semaphore.SemaphoreGuard;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
@@ -54,7 +55,7 @@ public class LLMProviderLocalOllama extends LLMProvider {
     }
 
     @Override
-    //@SemaphoreGuard(limit = 1)
+    @SemaphoreGuard(limit = 1)
     public String askLLMImpl(Optional<String> systemPrompt, String userPrompt, Optional<ResponseFormat> responseFormat) {
         List<ChatMessage> messages = new ArrayList<>();
         if (userPrompt != null && !userPrompt.isEmpty()) {
@@ -64,10 +65,8 @@ public class LLMProviderLocalOllama extends LLMProvider {
         }
         systemPrompt.ifPresent(systemPromptStr -> messages.add(SystemMessage.from(systemPromptStr)));
 
-
         ResponseFormat defaultResponseFormat = ResponseFormat.builder()
                 .type(ResponseFormatType.TEXT).build();
-
 
         ChatRequestParameters chatRequestParameters = ChatRequestParameters.builder()
                 .responseFormat(responseFormat.orElse(defaultResponseFormat))

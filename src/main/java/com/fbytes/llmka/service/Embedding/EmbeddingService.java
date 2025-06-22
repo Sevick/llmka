@@ -35,7 +35,7 @@ public class EmbeddingService implements IEmbeddingService {
     @Value("${llmka.embedding.segment_overlap:128}")
     private Integer segmentOverlap;
 
-    private PoolingMode poolingMode = PoolingMode.CLS;
+    private final PoolingMode poolingMode = PoolingMode.CLS;
     private EmbeddingModel embeddingModel;
 
 

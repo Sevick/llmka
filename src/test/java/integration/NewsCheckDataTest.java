@@ -1,8 +1,9 @@
-package unit;
+package integration;
 
 import com.fbytes.llmka.logger.Logger;
 import com.fbytes.llmka.model.NewsData;
 import com.fbytes.llmka.service.EmbeddedStore.EmbeddedStoreService;
+import com.fbytes.llmka.service.EmbeddedStore.SchemaStoreFactory;
 import com.fbytes.llmka.service.Embedding.IEmbeddingService;
 import com.fbytes.llmka.service.Embedding.EmbeddingService;
 import com.fbytes.llmka.service.NewsCheck.INewsCheck;
@@ -16,7 +17,7 @@ import org.springframework.util.Assert;
 
 import java.util.Optional;
 
-@SpringBootTest(classes = {EmbeddingService.class, NewsCheckData.class, EmbeddedStoreService.class})
+@SpringBootTest(classes = {EmbeddingService.class, NewsCheckData.class, EmbeddedStoreService.class, SchemaStoreFactory.class})
 @ContextConfiguration(classes = {TestConfig.class})
 class NewsCheckDataTest {
     private static final Logger logger = Logger.getLogger(NewsCheckDataTest.class);
@@ -28,9 +29,10 @@ class NewsCheckDataTest {
 
     @Test
     void newsCheckDataDuplicationTest() {
+
         NewsData newsData = NewsData.builder()
                 .id("intID1")
-                .extID("extID1")
+                .extID("extID1223")
                 .dataSourceID("DataSourceID")
                 .link("http://somelink")
                 .title("Title")
@@ -38,9 +40,11 @@ class NewsCheckDataTest {
                 .text(Optional.empty())
                 .build();
 
-        newsCheckDataService.checkNews("testschema", newsData);
+        Optional<INewsCheck.RejectReason> duplication;
+        duplication = newsCheckDataService.checkNews("testschema", newsData);
+        Assert.isTrue(duplication.isEmpty(), "Wrong duplication detectiond");
 
-        Optional<INewsCheck.RejectReason> duplication = newsCheckDataService.checkNews("testschema", newsData);
+        duplication = newsCheckDataService.checkNews("testschema", newsData);
         Assert.isTrue(!duplication.isEmpty(), "Duplication not detected");
         Assert.isTrue(duplication.get().getReason() == INewsCheck.RejectReason.REASON.CLOSE_MATCH, "Record rejected, but reject reason is not CLOSE_MATCH");
     }

@@ -26,19 +26,21 @@ public class DataRetrieverRSS extends DataRetriever<RssNewsSource> {
 
     private static final Logger logger = Logger.getLogger(DataRetrieverRSS.class);
 
-    @Autowired
-    private RestTemplate restTemplate;
-    @Autowired
-    private IParserRSS parserRSS;
+    private final RestTemplate restTemplate;
+    private final IParserRSS parserRSS;
 
     private final HttpEntity<String> httpEntity;
 
-    public DataRetrieverRSS() {
+    public DataRetrieverRSS(@Autowired IParserRSS parserRSS, @Autowired RestTemplate restTemplate) {
+        this.parserRSS = parserRSS;
+        this.restTemplate = restTemplate;
+
         HttpHeaders headers = new HttpHeaders();
         headers.add("Accept", "application/rss+xml");
         headers.add("User-Agent", "Postman");
         this.httpEntity = new HttpEntity<>(headers);
     }
+
 
     @Override
     @Timed(value = "llmka.dataretrive.rss.time", description = "time retrieve RSS data", percentiles = {0.5, 0.9})

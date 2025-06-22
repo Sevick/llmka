@@ -19,8 +19,11 @@ import java.util.stream.Stream;
 public class DataRetrieveService implements IDataRetrieveService {
     private static final Logger logger = Logger.getLogger(DataRetrieveService.class);
 
-    @Autowired
-    private Map<String, IDataRetriever> retrieverMap;
+    private final Map<String, IDataRetriever> retrieverMap;
+
+    public DataRetrieveService(@Autowired Map<String, IDataRetriever> retrieverMap) {
+        this.retrieverMap = retrieverMap;
+    }
 
     @Timed(value = "llmka.dataretrive.time", description = "time to retrieve data from newsSource", percentiles = {0.5, 0.9})
     public Optional<Stream<NewsData>> retrieveData(NewsSource newsSource) throws NoSuchRetrieverException {

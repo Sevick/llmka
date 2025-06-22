@@ -40,7 +40,7 @@ public class NewsCheckMetaSchema implements INewsCheck, INewsIDStore {
     @Autowired
     private MeterRegistry meterRegistry;
     @Autowired
-    IAppEventSenderService appEventSenderService;
+    private IAppEventSenderService appEventSenderService;
 
     private final String schema;
     // Lock used to block hashMap for compressions, so compression accuires write lock and usual map manipulations - read lock
@@ -118,7 +118,7 @@ public class NewsCheckMetaSchema implements INewsCheck, INewsIDStore {
             metaHashCompressLock.writeLock().lock();
             logger.trace("[{}] Lock acquired for meta compression", schema);
 
-            logger.info("[{}] Compressing metaHash. Current size: {}", schema, metaHash.size());
+            logger.info("[{}] Compressing metaHash. Current size: {}, seq# {}", schema, metaHash.size(), metaHashSeq.get());
             entriesArr = metaHash.entrySet().toArray(new Map.Entry[0]);
             Arrays.sort(entriesArr, Map.Entry.<BigInteger, Pair<Integer, String>>comparingByValue());   // ascending order by seq#
 
@@ -133,9 +133,10 @@ public class NewsCheckMetaSchema implements INewsCheck, INewsIDStore {
             metaHashCompressLock.writeLock().unlock();
             logger.trace("[{}] Meta compression lock released", schema);
         }
-        List<String> removedIdList = Arrays.stream(entriesArr, targetSize + 1, entriesArr.length - 1)
+        List<String> removedIdList = Arrays.stream(entriesArr, 0, entriesArr.length - targetSize - 1)
                 .map(entry -> entry.getValue().getRight())
                 .toList();
+        logger.info("[{}] MetaHash compressed. New size: {}, removed IDs: {}", schema, metaHash.size(), removedIdList.size());
         appEventSenderService.sendEvent(new AppEventMetahashCompress("NewsCheckMetaSchema", schema));
         return Pair.of(newMetaHash, removedIdList);
     }

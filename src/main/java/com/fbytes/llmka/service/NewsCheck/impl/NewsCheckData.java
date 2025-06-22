@@ -26,10 +26,13 @@ public class NewsCheckData implements INewsCheck {
     @Value("#{T(Float).parseFloat('${llmka.newscheck.datacheck.score_limit}')}")
     private Float scoreLimit;
 
-    @Autowired
-    private IEmbeddingService embeddingService;
-    @Autowired
-    private IEmbeddedStoreService embeddingStoreService;
+    private final IEmbeddingService embeddingService;
+    private final IEmbeddedStoreService embeddingStoreService;
+
+    public NewsCheckData(@Autowired IEmbeddingService embeddingService, @Autowired IEmbeddedStoreService embeddingStoreService) {
+        this.embeddingService = embeddingService;
+        this.embeddingStoreService = embeddingStoreService;
+    }
 
     @Override
     @ParamTimedMetric(key = "schema")
